@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useChileanTime } from './hooks/useChileanTime';
 import { useFontSize } from './hooks/useFontSize';
 import { ContactButton } from './components/ContactButton';
 import { FontSizeControl } from './components/FontSizeControl';
 import { TimeIndicator } from './components/TimeIndicator';
+import { SwipeTutorial } from './components/SwipeTutorial';
 import { StoreIcon, ChatIcon, CartIcon, EmailIcon } from './components/icons';
 import type { TrackEntry } from './types';
 
@@ -11,6 +12,13 @@ const App: React.FC = () => {
   const { isHumanHours, statusMessage, scheduleMessage } = useChileanTime();
   const { increaseFontSize, decreaseFontSize } = useFontSize();
   const [contactsToday, setContactsToday] = useState<number>(0);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Refs for swipe gesture
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const swipeHandled = useRef(false);
+  const SWIPE_THRESHOLD = 50; // pixels
 
   useEffect(() => {
     const storedData = localStorage.getItem('comerzaContactCounter');
@@ -50,26 +58,35 @@ const App: React.FC = () => {
     const log = JSON.parse(localStorage.getItem('comerzaContactLog') || '[]') as TrackEntry[];
     log.push(newEntry);
     localStorage.setItem('comerzaContactLog', JSON.stringify(log));
-
-    // SUGGESTION FOR GOOGLE SHEETS INTEGRATION:
-    // To send this data to Google Sheets, create a Google Apps Script Web App.
-    // The script would receive a POST request and append a new row to a sheet.
-    /*
-    const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL';
-    fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors', // Important for simple web apps
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newEntry),
-    }).catch(error => console.error('Error sending data to Google Sheets:', error));
-    */
   }, [contactsToday, isHumanHours]);
 
   const handleContactClick = (type: 'store' | 'support' | 'sales' | 'email', url: string) => {
     trackContact(type);
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+  
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    swipeHandled.current = false;
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (swipeHandled.current || e.touches.length === 0) return;
+
+    const deltaX = e.touches[0].clientX - touchStartX.current;
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+
+    // Swipe up-right to increase font size
+    if (deltaX > SWIPE_THRESHOLD && deltaY < -SWIPE_THRESHOLD) {
+      increaseFontSize();
+      swipeHandled.current = true;
+    }
+    // Swipe down-left to decrease font size
+    else if (deltaX < -SWIPE_THRESHOLD && deltaY > SWIPE_THRESHOLD) {
+      decreaseFontSize();
+      swipeHandled.current = true;
+    }
   };
 
   const whatsappNumber = '+56226830645';
@@ -77,10 +94,20 @@ const App: React.FC = () => {
   const salesMessage = encodeURIComponent('Hola, quisiera cotizar...');
 
   return (
-    <div className="bg-[#182260] text-white min-h-screen flex flex-col font-sans p-4 sm:p-6">
+    <div 
+      className="bg-[#182260] text-white min-h-screen flex flex-col font-sans p-4 sm:p-6"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
+      {showTutorial && <SwipeTutorial onClose={() => setShowTutorial(false)} />}
+      
       <header className="flex justify-between items-center w-full max-w-2xl mx-auto mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold">Comerza</h1>
-        <FontSizeControl onIncrease={increaseFontSize} onDecrease={decreaseFontSize} />
+        <FontSizeControl 
+          onIncrease={increaseFontSize} 
+          onDecrease={decreaseFontSize} 
+          onShowTutorial={() => setShowTutorial(true)}
+        />
       </header>
       
       <main className="flex-grow flex flex-col items-center justify-center w-full max-w-2xl mx-auto">

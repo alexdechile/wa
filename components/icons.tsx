@@ -37,3 +37,17 @@ export const TextBiggerIcon: React.FC = () => (
     <text x="50%" y="55%" dominantBaseline="middle" textAnchor="middle" fontSize="18" fontWeight="bold" fill="white">A</text>
   </svg>
 );
+
+export const QuestionMarkIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
+
+export const HandSwipeIcon: React.FC = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 64 64" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M42 24l-8 8-4-4-8 8" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M30 36l-4 4c-2 2-2 5 0 7l6 6c2 2 5 2 7 0l10-10" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M34 22l8-8" />
+    </svg>
+);
