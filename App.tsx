@@ -6,6 +6,7 @@ import { FontSizeControl } from './components/FontSizeControl';
 import { TimeIndicator } from './components/TimeIndicator';
 import { SwipeTutorial } from './components/SwipeTutorial';
 import { StoreIcon, ChatIcon, CartIcon, EmailIcon } from './components/icons';
+import { ComerzaLogo } from './components/ComerzaLogo';
 import type { TrackEntry } from './types';
 
 const App: React.FC = () => {
@@ -102,7 +103,7 @@ const App: React.FC = () => {
       {showTutorial && <SwipeTutorial onClose={() => setShowTutorial(false)} />}
       
       <header className="flex justify-between items-center w-full max-w-2xl mx-auto mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold">Comerza</h1>
+        <ComerzaLogo />
         <FontSizeControl 
           onIncrease={increaseFontSize} 
           onDecrease={decreaseFontSize} 
