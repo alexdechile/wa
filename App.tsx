@@ -10,7 +10,7 @@ import { ComerzaLogo } from './components/ComerzaLogo';
 import type { TrackEntry } from './types';
 
 const App: React.FC = () => {
-  const { isHumanHours, statusMessage, scheduleMessage } = useChileanTime();
+  const { isHumanHours, statusMessage, scheduleMessage, isLoading } = useChileanTime();
   const { increaseFontSize, decreaseFontSize } = useFontSize();
   const [contactsToday, setContactsToday] = useState<number>(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -43,22 +43,29 @@ const App: React.FC = () => {
   }, []);
   
   const trackContact = useCallback((buttonType: 'store' | 'support' | 'sales' | 'email') => {
-    // 1. Update public counter
+    // 1. Update public counter (UI feedback is instant)
     const newCount = contactsToday + 1;
     setContactsToday(newCount);
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem('comerzaContactCounter', JSON.stringify({ date: today, count: newCount }));
 
-    // 2. Internal tracking
-    const newEntry: TrackEntry = {
-      timestamp: new Date().toISOString(),
+    // 2. Send data to serverless function for persistent logging
+    const trackPayload = {
       button: buttonType,
       isHumanHours,
     };
 
-    const log = JSON.parse(localStorage.getItem('comerzaContactLog') || '[]') as TrackEntry[];
-    log.push(newEntry);
-    localStorage.setItem('comerzaContactLog', JSON.stringify(log));
+    fetch('/api/track', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(trackPayload),
+    }).catch(error => {
+      // Log error but don't block user
+      console.error('Failed to track contact:', error);
+    });
+
   }, [contactsToday, isHumanHours]);
 
   const handleContactClick = (type: 'store' | 'support' | 'sales' | 'email', url: string) => {
@@ -116,7 +123,7 @@ const App: React.FC = () => {
           <h2 className="text-3xl sm:text-4xl font-semibold mb-4">¿En qué podemos ayudarte?</h2>
           <TimeIndicator
             isHumanHours={isHumanHours}
-            line1={statusMessage}
+            line1={isLoading ? 'Verificando horario...' : statusMessage}
             line2={scheduleMessage}
           />
           

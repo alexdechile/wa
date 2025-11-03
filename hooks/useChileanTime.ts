@@ -4,62 +4,44 @@ interface ChileanTime {
   isHumanHours: boolean;
   statusMessage: string;
   scheduleMessage: string;
+  isLoading: boolean;
 }
 
 export const useChileanTime = (): ChileanTime => {
-  const [timeInfo, setTimeInfo] = useState<ChileanTime>({
+  const [timeInfo, setTimeInfo] = useState<Omit<ChileanTime, 'isLoading'>>({
     isHumanHours: false,
-    statusMessage: 'Verificando horario...',
+    statusMessage: '',
     scheduleMessage: ''
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkTime = () => {
-      const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'America/Santiago',
-        weekday: 'short',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: false,
-      };
-
-      const formatter = new Intl.DateTimeFormat('en-US', options);
-      const parts = formatter.formatToParts(now);
-
-      const getPartValue = (type: string) => parts.find(p => p.type === type)?.value || '';
-
-      const day = getPartValue('weekday');
-      const hour = parseInt(getPartValue('hour'), 10);
-      const minute = parseInt(getPartValue('minute'), 10);
-      
-      const isWeekday = !['Sat', 'Sun'].includes(day);
-      const timeInMinutes = hour * 60 + minute;
-      const startMinutes = 8 * 60 + 30; // 8:30
-      const endMinutes = 17 * 60 + 30; // 17:30
-
-      const isWithinHours = isWeekday && timeInMinutes >= startMinutes && timeInMinutes < endMinutes;
-      
-      if (isWithinHours) {
-        setTimeInfo({
-          isHumanHours: true,
-          statusMessage: 'Estamos atendiendo',
-          scheduleMessage: 'Lunes a Viernes de 8:30 a 17:30'
-        });
-      } else {
+    const fetchTimeInfo = async () => {
+      try {
+        const response = await fetch('/api/time');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setTimeInfo(data);
+      } catch (error) {
+        console.error("Failed to fetch time info:", error);
+        // Fallback for offline or API error
         setTimeInfo({
           isHumanHours: false,
-          statusMessage: 'Fuera de horario de atención',
-          scheduleMessage: 'Te responderemos cuando estemos disponibles'
+          statusMessage: 'No se pudo verificar el horario',
+          scheduleMessage: 'Inténtalo de nuevo más tarde'
         });
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    checkTime();
-    const intervalId = setInterval(checkTime, 60000); // Check every minute
+    fetchTimeInfo();
+    const intervalId = setInterval(fetchTimeInfo, 60000); // Check every minute
 
     return () => clearInterval(intervalId);
   }, []);
 
-  return timeInfo;
+  return { ...timeInfo, isLoading };
 };
