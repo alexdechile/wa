@@ -1,6 +1,6 @@
 // File: functions/api/panel/summary.ts
 
-import { fetchBridgeHealth, getSessionEmail, json } from '../../_lib/auth';
+import { fetchBridgeHealth, fetchOpenLeads, getSessionEmail, json } from '../../_lib/auth';
 
 interface ContactEventRow {
   occurred_at: string;
@@ -68,6 +68,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   }
 
   const bridge = await fetchBridgeHealth(env);
+  const openLeads = await fetchOpenLeads(env);
 
   return json({
     email,
@@ -81,6 +82,20 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     // Un cero debe poder distinguirse de una falla: `bridge: null` significa
     // "no se pudo consultar", no "el canal está sano".
     bridge,
+    supervision: {
+      // `reachable: false` = no se pudo consultar. Distinto de "sin leads".
+      reachable: openLeads !== null,
+      openCount: (openLeads ?? []).length,
+      awaitingConfirmation: (openLeads ?? []).filter(
+        (lead) => lead.status === 'alerta_enviada',
+      ).length,
+      leads: (openLeads ?? []).slice(0, 10).map((lead) => ({
+        id: lead.id,
+        detectedAt: lead.detectedAt,
+        button: lead.button ?? null,
+        status: lead.status,
+      })),
+    },
     latest: todayEvents.slice(0, 15).map((row) => ({
       at: row.occurred_at,
       button: row.button,

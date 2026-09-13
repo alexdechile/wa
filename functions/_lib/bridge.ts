@@ -83,6 +83,42 @@ export interface LeadNotification {
   detectedAt?: string;
 }
 
+export interface BridgeLead {
+  id: string;
+  detectedAt: string;
+  trigger: string;
+  source: string;
+  button?: string | null;
+  status: string;
+  alertedAt?: string | null;
+  remindedAt?: string | null;
+  escalatedAt?: string | null;
+  confirmedAt?: string | null;
+  closedAt?: string | null;
+  confirmedBy?: string | null;
+}
+
+/**
+ * Leads abiertos del lazo de supervisión.
+ *
+ * Devuelve `null` si el puente no responde: el panel debe poder distinguir
+ * "no hay leads" de "no se pudo consultar".
+ */
+export async function fetchOpenLeads(
+  env: Env,
+  timeoutMs = 4000,
+): Promise<BridgeLead[] | null> {
+  const response = await callBridge(env, '/leads', { method: 'GET' }, timeoutMs);
+  if (!response?.ok) return null;
+
+  try {
+    const body = (await response.json()) as { leads?: BridgeLead[] };
+    return body.leads ?? [];
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Avisa al puente que alguien se dirigió a la línea humana.
  *

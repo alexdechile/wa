@@ -9,6 +9,13 @@ interface PanelEvent {
   outOfHours: boolean;
 }
 
+interface PanelLead {
+  id: string;
+  detectedAt: string;
+  button: string | null;
+  status: string;
+}
+
 interface Summary {
   email: string;
   date: string;
@@ -19,6 +26,12 @@ interface Summary {
   toHuman: number;
   toAssistant: number;
   bridge: { connected: boolean; authenticated: boolean } | null;
+  supervision: {
+    reachable: boolean;
+    openCount: number;
+    awaitingConfirmation: number;
+    leads: PanelLead[];
+  };
   latest: PanelEvent[];
 }
 
@@ -30,6 +43,15 @@ const BUTTON_LABELS: Record<string, string> = {
   sales: 'Ventas y cotizaciones',
   materials: 'Lista de materiales',
   email: 'Email',
+};
+
+const LEAD_STATUS_LABELS: Record<string, string> = {
+  nuevo: 'por alertar',
+  alerta_enviada: 'esperando confirmación',
+  confirmado_pendiente: 'confirmado, sigue pendiente',
+  confirmado_atendido: 'atendido',
+  sin_llegada: 'no llegó nada',
+  vencido: 'vencido sin confirmar',
 };
 
 const TIME_FORMATTER = new Intl.DateTimeFormat('es-CL', {
@@ -264,6 +286,41 @@ export const Panel: React.FC = () => {
                       </li>
                     ))}
                 </ul>
+              )}
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold mb-3">Supervisión de leads</h2>
+              {!summary.supervision.reachable ? (
+                <p className="text-amber-300 bg-amber-500/10 rounded-xl px-4 py-3">
+                  No se pudo consultar el lazo de supervisión: puede haber leads sin
+                  alertar.
+                </p>
+              ) : summary.supervision.openCount === 0 ? (
+                <p className="text-gray-400">Sin leads pendientes de confirmación.</p>
+              ) : (
+                <>
+                  <p className="text-gray-300 mb-3">
+                    {summary.supervision.openCount} lead(s) abierto(s) ·{' '}
+                    {summary.supervision.awaitingConfirmation} esperando confirmación
+                  </p>
+                  <ul className="space-y-2">
+                    {summary.supervision.leads.map((lead) => (
+                      <li
+                        key={lead.id}
+                        className="flex flex-wrap justify-between gap-2 bg-white/5 rounded-xl px-4 py-3"
+                      >
+                        <span className="text-lg">
+                          {TIME_FORMATTER.format(new Date(lead.detectedAt))} ·{' '}
+                          {lead.button ? label(lead.button) : 'contacto'}
+                        </span>
+                        <span className="text-gray-400 text-base">
+                          {LEAD_STATUS_LABELS[lead.status] ?? lead.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </section>
 
