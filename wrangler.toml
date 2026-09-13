@@ -14,7 +14,8 @@ name = "comerza-wa"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "dist"
 
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "comerza-wa"
-# database_id = "PENDIENTE"
+[[d1_databases]]
+binding = "DB"
+database_name = "comerza-wa"
+database_id = "19972fa5-b040-442e-9213-c6dbbac53aef"
+
