@@ -1,20 +1,16 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
-- **Túnel Permanente de Cloudflare Configurado**:
-  - Se autorizó el dominio `comerza.cl` mediante `cloudflared`.
-  - Se creó el túnel permanente `comerza-bridge` (ID: `3db11b34-7571-4c03-afd3-b299f19edc6f`).
-  - Se configuró la ruta DNS CNAME `bridge-wa.comerza.cl`.
-  - Se instaló y habilitó el servicio de systemd user `cloudflared-bridge.service` (activo y persistente).
-- **Configuración de Secretos en Cloudflare Pages (`wa`)**:
-  - `BRIDGE_TOKEN`: Secreto criptográfico de 64 caracteres configurado.
-  - `BRIDGE_URL`: `https://bridge-wa.comerza.cl` configurado.
-  - Se guardaron las variables de entorno en `/home/alexdechile/proyectos/bim/.env`.
-- **Instalación de cloudflared**:
-  - Se instaló el binario oficial `cloudflared` en `~/.local/bin/cloudflared`.
-- **Base de Datos D1**:
-  - Base D1 `comerza-wa` creada y vinculada en `wrangler.toml`.
-  - Migraciones remotas aplicadas (`0001_contact_events.sql` y `0002_panel_auth.sql`).
+- **Despliegue y Activación Integral del Ecosistema Puerta**:
+  - **Git & GitHub:** Rama `feat/puerta-horario-y-requerimientos` subida a GitHub (`origin/feat/puerta-horario-y-requerimientos`).
+  - **Cloudflare Pages:** Compilado (`npm run build`) y desplegado exitosamente en producción (`main`) y preview branch.
+  - **Cloudflare D1:** Base de datos `comerza-wa` vinculada y migraciones aplicadas.
+  - **Cloudflare Tunnel:** Túnel permanente `comerza-bridge` activo por `systemd` y enrutando `bridge-wa.comerza.cl` → `127.0.0.1:8787`.
+  - **Servicios de Host en Systemd (User):**
+    - `cloudflared-bridge.service` (Túnel Cloudflare) - ACTIVO.
+    - `comerza-bridge.service` (Puente HTTP wacli en puerto 8787) - ACTIVO y respondiendo a través de `https://bridge-wa.comerza.cl`.
+    - `comerza-supervision.service` (Supervisión y lazo de alertas) - ACTIVO (intervalo 60s, alertando al supervisor `56993206000` y escalamiento a `56992215761`).
+  - **Secretos Configurados en Pages:** `BRIDGE_TOKEN` y `BRIDGE_URL` (`https://bridge-wa.comerza.cl`).
 
 ## ¿Qué hace esta App?
 Enrutador de contacto inteligente y telemetría de eventos de contacto para Comerza. Dirige a los clientes según horario comercial (línea humana vs asistente automatizado) y registra telemetría de clics e interacciones en Cloudflare D1.
@@ -23,4 +19,4 @@ Enrutador de contacto inteligente y telemetría de eventos de contacto para Come
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS.
 - **Edge / Backend:** Cloudflare Pages Functions (`/functions/api/track.ts`).
 - **Base de Datos:** Cloudflare D1 (`comerza-wa`).
-- **Integración Host:** Puente HTTP wacli (`bim`) + Túnel Cloudflare (`bridge-wa.comerza.cl`).
+- **Integración Host:** Puente HTTP wacli (`bim`), Supervisión en TypeScript, Túnel Cloudflare (`bridge-wa.comerza.cl`) gestionados por `systemd --user`.
