@@ -1,0 +1,20 @@
+# Configuración de Cloudflare Pages para wa.comerza.cl
+#
+# El binding D1 está comentado a propósito: mientras no exista la base, el
+# enrutador funciona igual y la telemetría solo queda en logs (ver
+# functions/api/track.ts). Para activarla:
+#
+#   npx wrangler d1 create comerza-wa
+#   # copiar el database_id que devuelve y descomentar el bloque de abajo
+#   npm run db:migrate:remote
+#
+# Ver openspec/proposals/comerza-door-experiment/spec.md
+
+name = "comerza-wa"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "dist"
+
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "comerza-wa"
+# database_id = "PENDIENTE"

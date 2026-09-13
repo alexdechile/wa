@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 interface ChileanTime {
   isHumanHours: boolean;
+  isLunchBreak: boolean;
   statusMessage: string;
   scheduleMessage: string;
   isLoading: boolean;
@@ -10,6 +11,7 @@ interface ChileanTime {
 export const useChileanTime = (): ChileanTime => {
   const [timeInfo, setTimeInfo] = useState<Omit<ChileanTime, 'isLoading'>>({
     isHumanHours: false,
+    isLunchBreak: false,
     statusMessage: '',
     scheduleMessage: ''
   });
@@ -26,11 +28,13 @@ export const useChileanTime = (): ChileanTime => {
         setTimeInfo(data);
       } catch (error) {
         console.error("Failed to fetch time info:", error);
-        // Fallback for offline or API error
+        // Si no se puede verificar el horario, se asume FUERA de horario humano:
+        // esa ruta siempre tiene respuesta, porque el asistente atiende 24/7.
         setTimeInfo({
           isHumanHours: false,
+          isLunchBreak: false,
           statusMessage: 'No se pudo verificar el horario',
-          scheduleMessage: 'Inténtalo de nuevo más tarde'
+          scheduleMessage: 'Nuestro asistente te responde ahora'
         });
       } finally {
         setIsLoading(false);

@@ -5,12 +5,36 @@ import { ContactButton } from './components/ContactButton';
 import { FontSizeControl } from './components/FontSizeControl';
 import { TimeIndicator } from './components/TimeIndicator';
 import { SwipeTutorial } from './components/SwipeTutorial';
-import { StoreIcon, ChatIcon, CartIcon, EmailIcon } from './components/icons';
+import { StoreIcon, ChatIcon, CartIcon, EmailIcon, MaterialsIcon } from './components/icons';
 import { ComerzaLogo } from './components/ComerzaLogo';
-import type { TrackEntry } from './types';
+import type { ContactButtonType, TargetLine, TrackEntry } from './types';
+
+/**
+ * Líneas de atención (ver openspec/proposals/comerza-door-experiment/spec.md):
+ *
+ * - HUMAN: atención de personas, lunes a viernes de 8:30 a 13:00 y de 14:00 a
+ *   17:30.
+ * - ASSISTANT: línea de wacli, el asistente que recibe requerimientos y
+ *   responde 24/7. Nunca cotiza: recibe y deriva a un humano.
+ *
+ * En horario hábil se ofrecen ambas. Fuera de horario (noche, fin de semana y
+ * almuerzo) todo el tráfico de conversación va al asistente.
+ */
+const HUMAN_WHATSAPP = '+56226830645';
+const ASSISTANT_WHATSAPP = '+56226832189';
+const STORE_URL = 'https://www.comerza.cl';
+const SALES_EMAIL = 'ventas@comerza.cl';
+
+const PREFILL_SUPPORT = encodeURIComponent('Hola, necesito ayuda con...');
+const PREFILL_SALES = encodeURIComponent('Hola, quisiera cotizar...');
+const PREFILL_MATERIALS = encodeURIComponent(
+  'Hola, quiero cotizar una lista de materiales. Se la envío en foto, texto o Excel:'
+);
+
+const waLink = (phone: string, text: string) => `https://wa.me/${phone}?text=${text}`;
 
 const App: React.FC = () => {
-  const { isHumanHours, statusMessage, scheduleMessage, isLoading } = useChileanTime();
+  const { isHumanHours, isLunchBreak, statusMessage, scheduleMessage, isLoading } = useChileanTime();
   const { increaseFontSize, decreaseFontSize } = useFontSize();
   const [contactsToday, setContactsToday] = useState<number>(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -42,7 +66,7 @@ const App: React.FC = () => {
     }
   }, []);
   
-  const trackContact = useCallback((buttonType: 'store' | 'support' | 'sales' | 'email') => {
+  const trackContact = useCallback((buttonType: ContactButtonType, targetLine: TargetLine) => {
     // 1. Update public counter (UI feedback is instant)
     const newCount = contactsToday + 1;
     setContactsToday(newCount);
@@ -50,9 +74,12 @@ const App: React.FC = () => {
     localStorage.setItem('comerzaContactCounter', JSON.stringify({ date: today, count: newCount }));
 
     // 2. Send data to serverless function for persistent logging
-    const trackPayload = {
+    const trackPayload: TrackEntry = {
+      timestamp: new Date().toISOString(),
       button: buttonType,
       isHumanHours,
+      isLunchBreak,
+      targetLine,
     };
 
     fetch('/api/track', {
@@ -66,10 +93,10 @@ const App: React.FC = () => {
       console.error('Failed to track contact:', error);
     });
 
-  }, [contactsToday, isHumanHours]);
+  }, [contactsToday, isHumanHours, isLunchBreak]);
 
-  const handleContactClick = (type: 'store' | 'support' | 'sales' | 'email', url: string) => {
-    trackContact(type);
+  const handleContactClick = (type: ContactButtonType, targetLine: TargetLine, url: string) => {
+    trackContact(type, targetLine);
     window.open(url, '_blank', 'noopener,noreferrer');
   };
   
@@ -97,9 +124,10 @@ const App: React.FC = () => {
     }
   };
 
-  const whatsappNumber = '+56226830645';
-  const supportMessage = encodeURIComponent('Hola, necesito ayuda con...');
-  const salesMessage = encodeURIComponent('Hola, quisiera cotizar...');
+  // En horario hábil atiende una persona; fuera de horario (noche, fin de semana
+  // y almuerzo) atiende el asistente.
+  const conversationPhone = isHumanHours ? HUMAN_WHATSAPP : ASSISTANT_WHATSAPP;
+  const conversationTarget: TargetLine = isHumanHours ? 'human' : 'assistant';
 
   return (
     <div 
@@ -131,22 +159,27 @@ const App: React.FC = () => {
             <ContactButton
               icon={<StoreIcon />}
               text="Visitar Tienda Online"
-              onClick={() => handleContactClick('store', 'https://www.comerza.cl')}
+              onClick={() => handleContactClick('store', 'web', STORE_URL)}
             />
             <ContactButton
               icon={<ChatIcon />}
               text="Consultas y Soporte"
-              onClick={() => handleContactClick('support', `https://wa.me/${whatsappNumber}?text=${supportMessage}`)}
+              onClick={() => handleContactClick('support', conversationTarget, waLink(conversationPhone, PREFILL_SUPPORT))}
             />
             <ContactButton
               icon={<CartIcon />}
               text="Ventas y Cotizaciones"
-              onClick={() => handleContactClick('sales', `https://wa.me/${whatsappNumber}?text=${salesMessage}`)}
+              onClick={() => handleContactClick('sales', conversationTarget, waLink(conversationPhone, PREFILL_SALES))}
+            />
+            <ContactButton
+              icon={<MaterialsIcon />}
+              text="Enviar Lista de Materiales"
+              onClick={() => handleContactClick('materials', 'assistant', waLink(ASSISTANT_WHATSAPP, PREFILL_MATERIALS))}
             />
              <ContactButton
               icon={<EmailIcon />}
               text="Enviar un Email"
-              onClick={() => handleContactClick('email', 'mailto:ventas@comerza.cl')}
+              onClick={() => handleContactClick('email', 'email', `mailto:${SALES_EMAIL}`)}
             />
           </div>
         </div>

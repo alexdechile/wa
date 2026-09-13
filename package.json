@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "npx wrangler d1 migrations apply comerza-wa --local",
+    "db:migrate:remote": "npx wrangler d1 migrations apply comerza-wa --remote"
   },
   "dependencies": {
     "react": "^19.2.0",
