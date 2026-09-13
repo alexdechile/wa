@@ -1,21 +1,22 @@
 # Configuración de Cloudflare Pages para wa.comerza.cl
 #
-# El binding D1 está comentado a propósito: mientras no exista la base, el
-# enrutador funciona igual y la telemetría solo queda en logs (ver
-# functions/api/track.ts). Para activarla:
+# El proyecto de Pages se llama `wa` (no confundir con la base D1, que se llama
+# `comerza-wa`). El proyecto NO tiene integración con Git y su **rama de
+# producción es `production`**: un merge a `main` no publica nada, y desplegar
+# con `--branch main` crea un PREVIEW. Así estuvo el sitio sirviendo código de
+# hace 10 meses sin que se notara.
 #
-#   npx wrangler d1 create comerza-wa
-#   # copiar el database_id que devuelve y descomentar el bloque de abajo
-#   npm run db:migrate:remote
+#   npm run build
+#   npx wrangler pages deploy dist --project-name wa --branch production
 #
 # Ver openspec/proposals/comerza-door-experiment/spec.md
 
-name = "comerza-wa"
+name = "wa"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = "dist"
 
+# Base D1 para la telemetría del enrutador y el panel interno.
 [[d1_databases]]
 binding = "DB"
 database_name = "comerza-wa"
 database_id = "19972fa5-b040-442e-9213-c6dbbac53aef"
-
