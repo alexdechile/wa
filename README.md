@@ -54,6 +54,12 @@ npm run db:migrate:remote
 
 Esquema en `migrations/0001_contact_events.sql`.
 
+Además, cuando el clic se dirige a la **línea humana** (ventas o soporte en
+horario hábil), el enrutador avisa al puente de wacli para que el lazo de
+supervisión del host alerte al supervisor. Los clics que van al asistente **no**
+generan alerta: los atiende wacli. El aviso no bloquea la respuesta al cliente
+(`waitUntil`) y un fallo del puente no afecta la experiencia.
+
 ## Panel interno
 
 `/panel` muestra el desarrollo de contactos del día. **No es público**: requiere

@@ -144,62 +144,9 @@ export function getSecret(env: Env): string | null {
   return env.BRIDGE_TOKEN && env.BRIDGE_TOKEN.length >= 24 ? env.BRIDGE_TOKEN : null;
 }
 
-/** Envía un WhatsApp a través del puente de wacli. */
-export async function sendWhatsApp(
-  env: Env,
-  chatId: string,
-  text: string,
-  timeoutMs = 8000,
-): Promise<boolean> {
-  if (!env.BRIDGE_URL || !env.BRIDGE_TOKEN) return false;
-
-  try {
-    const response = await fetch(
-      `${env.BRIDGE_URL.replace(/\/+$/, '')}/messages/text`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${env.BRIDGE_TOKEN}`,
-        },
-        body: JSON.stringify({ chatId, text }),
-        signal: AbortSignal.timeout(timeoutMs),
-      },
-    );
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-/** Consulta la salud del puente. Devuelve `null` si no es alcanzable. */
-export async function fetchBridgeHealth(
-  env: Env,
-  timeoutMs = 3000,
-): Promise<{ connected: boolean; authenticated: boolean } | null> {
-  if (!env.BRIDGE_URL || !env.BRIDGE_TOKEN) return null;
-
-  try {
-    const response = await fetch(
-      `${env.BRIDGE_URL.replace(/\/+$/, '')}/health`,
-      {
-        headers: { Authorization: `Bearer ${env.BRIDGE_TOKEN}` },
-        signal: AbortSignal.timeout(timeoutMs),
-      },
-    );
-    if (!response.ok) return null;
-    const health = (await response.json()) as {
-      connected?: boolean;
-      authenticated?: boolean;
-    };
-    return {
-      connected: health.connected === true,
-      authenticated: health.authenticated === true,
-    };
-  } catch {
-    return null;
-  }
-}
+// El cliente del puente vive en `_lib/bridge.ts`; se reexporta para que los
+// llamadores sigan importando desde aquí.
+export { fetchBridgeHealth, sendWhatsApp } from './bridge';
 
 /** Devuelve el correo de la sesión válida, o `null`. */
 export async function getSessionEmail(

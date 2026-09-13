@@ -1,6 +1,7 @@
 // File: functions/api/track.ts
 
 import type { ContactButtonType, TargetLine } from '../../types';
+import { notifyLead } from '../_lib/bridge';
 
 interface TrackPayload {
   button: ContactButtonType;
@@ -21,7 +22,7 @@ function json(body: unknown, status: number): Response {
 }
 
 // This is a Cloudflare Pages function that handles POST requests
-export const onRequestPost: PagesFunction = async ({ request, env }) => {
+export const onRequestPost: PagesFunction = async ({ request, env, waitUntil }) => {
   let payload: TrackPayload;
 
   try {
@@ -49,6 +50,25 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
     country: request.cf?.country ?? null,
     userAgent: request.headers.get('user-agent') ?? null,
   };
+
+  // Un lead es un clic que se dirigió a la línea HUMANA. Los clics que van al
+  // asistente no generan alerta: los atiende wacli.
+  const isHumanLineLead =
+    record.targetLine === 'human' &&
+    (record.button === 'sales' || record.button === 'support');
+
+  if (isHumanLineLead) {
+    const trigger = record.button === 'sales' ? 'T1' : 'T2';
+    // No bloquea la respuesta al cliente: el aviso viaja por el túnel y el
+    // lazo de supervisión del host es quien alerta al supervisor.
+    waitUntil(
+      notifyLead(env, {
+        trigger,
+        button: record.button,
+        detectedAt: record.timestamp,
+      }).catch(() => undefined),
+    );
+  }
 
   // Sin binding D1 la telemetría solo queda en logs. Es deliberado: el enrutador
   // debe seguir funcionando aunque la base no esté configurada.
