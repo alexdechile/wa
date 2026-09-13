@@ -62,7 +62,7 @@ generan alerta: los atiende wacli. El aviso no bloquea la respuesta al cliente
 
 ## Panel interno
 
-`/panel` muestra el desarrollo de contactos del día. **No es público**: requiere
+`/panel/` muestra el desarrollo de contactos del día. **No es público**: requiere
 sesión, y la sesión se abre con un código de 6 dígitos enviado por WhatsApp.
 
 - Autorizados: `alex@comerza.cl` e `ivan@comerza.cl` — **dos personas**. El flujo
@@ -86,17 +86,18 @@ Esquema en `migrations/0002_panel_auth.sql`.
 
 ```
 App.tsx                        Enrutador: decide la línea y registra el clic
-panel.tsx / panel.html         Entrada del panel interno
+panel.tsx                      Entrada del panel interno
+panel/index.html               HTML del panel (Pages lo sirve en /panel/)
 types.ts                       Tipos de botón, línea de destino y tracking
 hooks/useChileanTime.ts        Consulta /api/time cada minuto
 components/Panel.tsx           UI del panel (acceso por código)
 functions/api/time.ts          Horario de atención (America/Santiago)
-functions/api/track.ts         Telemetría de clics → D1
+functions/api/track.ts         Telemetría de clics → D1 y aviso de lead
 functions/api/auth/            OTP: pedir código, verificar, cerrar sesión
 functions/api/panel/summary.ts Resumen del día (requiere sesión)
-functions/_lib/auth.ts         Whitelist, crypto, cookies y puente
+functions/_lib/auth.ts         Whitelist, crypto, cookies y sesión
+functions/_lib/bridge.ts       Cliente del puente de wacli
 migrations/                    Esquema D1
-public/_redirects              Sirve el panel en /panel
 ```
 
 ## Contexto

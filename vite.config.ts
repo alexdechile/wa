@@ -23,7 +23,9 @@ export default defineConfig(({ mode }) => {
         rollupOptions: {
           input: {
             main: path.resolve(__dirname, 'index.html'),
-            panel: path.resolve(__dirname, 'panel.html'),
+            // El panel vive en una ruta de directorio (`/panel/`) para que
+            // Pages lo sirva sin reglas de reescritura.
+            panel: path.resolve(__dirname, 'panel/index.html'),
           },
         },
       }

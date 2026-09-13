@@ -2,7 +2,9 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**'] },
+  // `.wrangler` es estado local de desarrollo (base D1 local, bundles
+  // generados), no código del proyecto.
+  { ignores: ['dist/**', 'node_modules/**', '.wrangler/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
