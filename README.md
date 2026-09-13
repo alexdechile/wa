@@ -35,8 +35,23 @@ realidad no había nadie.
 npm install
 npm run dev
 npm run typecheck
+npm run lint
 npm run build
 ```
+
+## Despliegue
+
+El proyecto de Pages se llama **`wa`** y **no** tiene integración con Git. Su
+**rama de producción es `production`**:
+
+```bash
+npm run build
+npx wrangler pages deploy dist --project-name wa --branch production
+```
+
+**Cuidado:** desplegar con `--branch main` (o cualquier otra rama) crea un
+*preview* en `main.wa-8rp.pages.dev`, no publica en `wa.comerza.cl`. Un merge a
+`main` no despliega nada por sí solo.
 
 ## Telemetría
 
