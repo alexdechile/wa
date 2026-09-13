@@ -1,6 +1,7 @@
 // File: functions/api/panel/summary.ts
 
-import { fetchBridgeHealth, fetchOpenLeads, getSessionEmail, json } from '../../_lib/auth';
+import { fetchBridgeHealth, getSessionEmail, json } from '../../_lib/auth';
+import { fetchOpenLeads } from '../../_lib/bridge';
 
 interface ContactEventRow {
   occurred_at: string;
