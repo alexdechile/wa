@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:migrate:local": "npx wrangler d1 migrations apply comerza-wa --local",
     "db:migrate:remote": "npx wrangler d1 migrations apply comerza-wa --remote"
@@ -16,9 +17,12 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^10.10.0",
     "typescript": "~5.8.2",
+    "typescript-eslint": "^8.70.0",
     "vite": "^6.2.0"
   }
 }

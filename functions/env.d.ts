@@ -44,7 +44,9 @@ interface IncomingRequest extends Request {
 }
 
 // Fix: Add definition for EventContext to resolve "Cannot find name 'EventContext'" error.
-interface EventContext<Env, Params extends string, Data> {
+// El parámetro `_Params` está para reflejar la firma real de Cloudflare aunque
+// el cuerpo no lo use.
+interface EventContext<Env, _Params extends string, Data> {
   request: IncomingRequest;
   env: Env;
   params: Record<string, string | string[]>;

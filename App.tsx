@@ -58,7 +58,7 @@ const App: React.FC = () => {
           localStorage.setItem('comerzaContactCounter', JSON.stringify({ date: today, count: 0 }));
           setContactsToday(0);
         }
-      } catch (error) {
+      } catch {
          localStorage.setItem('comerzaContactCounter', JSON.stringify({ date: today, count: 0 }));
       }
     } else {
