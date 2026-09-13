@@ -1,0 +1,2 @@
+# El panel se sirve en /panel (el HTML vive en panel.html).
+/panel /panel.html 200

@@ -54,15 +54,43 @@ npm run db:migrate:remote
 
 Esquema en `migrations/0001_contact_events.sql`.
 
+## Panel interno
+
+`/panel` muestra el desarrollo de contactos del día. **No es público**: requiere
+sesión, y la sesión se abre con un código de 6 dígitos enviado por WhatsApp.
+
+- Autorizados: `alex@comerza.cl` e `ivan@comerza.cl` — **dos personas**. El flujo
+  **no revela** si un correo está autorizado (misma respuesta siempre).
+- Códigos de un solo uso, 10 minutos, máximo 5 intentos, máximo 3 emisiones por
+  hora, guardados como HMAC (nunca en claro).
+- Sesión de 12 horas en cookie `HttpOnly`, `Secure` y `SameSite=Lax`.
+- Solo muestra **metadatos de clics**, nunca contenido de conversaciones.
+
+Variables del proyecto de Pages:
+
+| Variable | Uso |
+|---|---|
+| `DB` | Binding D1 (obligatorio para el panel) |
+| `BRIDGE_URL` | URL del puente de wacli (repositorio `bim`) |
+| `BRIDGE_TOKEN` | Secreto compartido: firma los HMAC y autentica contra el puente |
+
+Esquema en `migrations/0002_panel_auth.sql`.
+
 ## Estructura
 
 ```
 App.tsx                        Enrutador: decide la línea y registra el clic
+panel.tsx / panel.html         Entrada del panel interno
 types.ts                       Tipos de botón, línea de destino y tracking
 hooks/useChileanTime.ts        Consulta /api/time cada minuto
+components/Panel.tsx           UI del panel (acceso por código)
 functions/api/time.ts          Horario de atención (America/Santiago)
 functions/api/track.ts         Telemetría de clics → D1
+functions/api/auth/            OTP: pedir código, verificar, cerrar sesión
+functions/api/panel/summary.ts Resumen del día (requiere sesión)
+functions/_lib/auth.ts         Whitelist, crypto, cookies y puente
 migrations/                    Esquema D1
+public/_redirects              Sirve el panel en /panel
 ```
 
 ## Contexto
