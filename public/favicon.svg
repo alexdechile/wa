@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="0.8" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <!-- Hoja de notas con esquina doblada -->
+  <path d="M6 3 H20 L26 9 V28 A1 1 0 0 1 25 29 H6 A1 1 0 0 1 5 28 V4 A1 1 0 0 1 6 3 Z" 
+        fill="#FFFFFF" 
+        stroke="#CBD5E1" 
+        stroke-width="1.2" 
+        filter="url(#shadow)" />
+  <path d="M20 3 V8 A1 1 0 0 0 21 9 H26 Z" 
+        fill="#E2E8F0" 
+        stroke="#CBD5E1" 
+        stroke-width="1" 
+        stroke-linejoin="round" />
+  <!-- Líneas de anotaciones -->
+  <rect x="9" y="11" width="14" height="2" rx="1" fill="#3B82F6" />
+  <rect x="9" y="15" width="11" height="2" rx="1" fill="#64748B" />
+  <rect x="9" y="19" width="13" height="2" rx="1" fill="#64748B" />
+  <rect x="9" y="23" width="7" height="2" rx="1" fill="#10B981" />
+</svg>
