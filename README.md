@@ -46,7 +46,7 @@ No hay que compilar ni desplegar a mano:
 
 | Evento | Qué hace |
 | --- | --- |
-| Push a `main` | `npm ci` → typecheck → lint → build → publica en la rama `production` de Pages |
+| Push a `main` | `npm ci` → typecheck → lint → build → aplica migraciones D1 → publica en la rama `production` de Pages → **verifica que la API quedó viva** |
 | Pull request a `main` | Verifica y compila. Además genera *preview* si el PR viene del mismo repo |
 | `workflow_dispatch` | Ejecución manual desde la pestaña Actions |
 
@@ -65,9 +65,38 @@ npx wrangler pages deploy dist --project-name wa --branch production
 
 ### Secretos del workflow
 
-- `CLOUDFLARE_API_TOKEN` (secreto): token de API de Cloudflare con permiso de
-  edición de Pages.
+- `CLOUDFLARE_API_TOKEN` (secreto): token de API de Cloudflare.
 - `CLOUDFLARE_ACCOUNT_ID` (variable): `48c58c35ad8f564abc5a8aa0de991aee`.
+
+### Migraciones D1
+
+Se aplican solas en cada push a `main`, antes de publicar el código. También a
+mano:
+
+```bash
+npm run db:migrate:remote   # producción
+npm run db:migrate:local    # base de desarrollo
+```
+
+**Requisito:** el `CLOUDFLARE_API_TOKEN` del repositorio necesita permiso de
+edición de **D1**, además de Pages. Si solo tiene `Pages:Edit`, la API responde
+error `7403` y el paso de migraciones se salta (está en `continue-on-error`,
+así que no bloquea el deploy). Se puede verificar con:
+
+```bash
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... npx wrangler d1 execute comerza-wa --remote --command "SELECT 1"
+```
+
+### Sobre `wrangler` en el deploy
+
+`wrangler` es una devDependency a propósito. `cloudflare/wrangler-action` busca
+un wrangler instalado y, si no lo encuentra, instala su wrangler@3 por
+defecto: **esa versión no sube las Pages Functions**, y el deploy terminaba en
+verde dejando `/api/*` sin backend. El job de deploy corre `npm ci` para usar la
+misma versión que en local.
+
+Por eso el deploy termina consultando la API en producción: un deploy no debe
+poder quedar en verde con el sitio sin backend.
 
 ## Telemetría
 

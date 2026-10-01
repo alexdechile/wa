@@ -1,6 +1,18 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
+- **Endurecimiento del enrutador y correlación con leads (2026-10-01)**:
+  - **Dos agujeros de seguridad cerrados**, ambos explotables sin autenticación:
+    - **DoS permanente del panel.** `/api/track` aceptaba cualquier texto como `timestamp` y lo guardaba crudo. `/api/panel/summary` lo formateaba con `Intl` sin `try/catch`, así que un solo POST dejaba una fila que hacía que **el panel entero quedara en 500 para siempre**. Ahora el reloj es del servidor, el filtro por forma de fecha va en SQL y hay una defensa extra en JS.
+    - **Inundación de alertas de WhatsApp.** `targetLine` e `isHumanHours` los declaraba el cliente y el edge les creía, sin rate limit: un POST con `{"button":"sales","targetLine":"human"}` disparaba el lazo del host, que alerta por WhatsApp al supervisor. Ahora la línea se deriva del botón con el horario del **servidor** y hay ventana fija en D1 (30 clics/min por IP, 3 leads/10 min).
+  - **Regla de enrutamiento con fuente única:** `lib/routing.ts` la usan el frontend y la función de edge. Antes la lógica vivía solo en el navegador.
+  - **Horario compartido:** `functions/_lib/schedule.ts` es la única implementación; la consumen `/api/time` y `/api/track`.
+  - **Correlación clic ↔ lead (Fase 1):** `notifyLead` ahora devuelve el `id` del lead y manda `clientRef` (`wa:evt:<id>`), un campo que el puente ya aceptaba y nunca se usó. Se agregó `lead_id` a `contact_events`, y el panel muestra el país del contacto en cada lead abierto.
+  - **Fix en `bim`:** `toRecord()` no copiaba `clientRef` al `LeadRecord`, así que `GET /leads` no lo devolvía y la correlación no llegaba al panel. Commit `91b168e`, puente reiniciado y verificado.
+  - **Secretos separados:** `PANEL_AUTH_SECRET` (HMAC de sesiones del panel) ya no es el mismo `BRIDGE_TOKEN` del puente de wacli. Rotar uno rompía el otro, y una filtración del panel daba acceso al WhatsApp del negocio.
+  - **`logout` revoca la sesión** en la base: antes solo borraba la cookie y el token seguía funcionando 12 h.
+  - **Headers de seguridad** en `public/_headers` y borrado del `importmap` que apuntaba a `aistudiocdn.com` en el HTML de producción.
+  - **Verificado en producción:** POST con `timestamp: "x"` → 200 sin romper el panel; forged `targetLine` ignorado (queda `web` para `store`); click de `sales` en horario hábil generó lead con `clientRef` correcto; `/api/track` inválido → 400; `/api/panel/summary` → 401 sin sesión; anti-enumeración de OTP → 200 genérico.
 - **CI/CD con GitHub Actions (2026-10-01)**:
   - **Workflow `.github/workflows/deploy.yml`:** dos jobs. `verify` corre `npm ci`, `typecheck`, `lint` y `build`, y sube `dist` como artefacto. `deploy` baja el artefacto y publica.
     - Push a `main` → Cloudflare Pages rama `production` (publica en wa.comerza.cl).
@@ -8,6 +20,8 @@
     - `workflow_dispatch` para correrlo a mano desde la pestaña Actions.
   - **Secretos en GitHub:** `CLOUDFLARE_API_TOKEN` (secreto) y `CLOUDFLARE_ACCOUNT_ID` (variable, `48c58c35...`). El token viene del archivo de credenciales del servidor y alcanza el proyecto `wa`.
   - **Primer run en verde:** `36893182137`, que dejó producción en el deployment `6c60856e` de Pages. Verificado en vivo: `/` 200, `/panel/` 200, `/favicon.svg` 200, `/api/time` responde.
+  - **Bug del deploy encontrado y corregido:** los deploys de Actions estaban publicando **solo los estáticos**. `wrangler-action` no encontraba wrangler (no era devDependency) e instalaba su wrangler@3, que no sube Pages Functions. El run quedaba en verde y `/api/time` pasaba a devolver el HTML del SPA, con `/api/track` en 405. Se corrigió con `wrangler` como devDependency, `npm ci` en el job de deploy, y un paso que verifica la API en producción después de desplegar. **Un deploy ya no puede quedar en verde con el sitio sin backend.**
+  - **Migraciones D1 automáticas** antes de publicar, con `continue-on-error` mientras el token de Cloudflare no tenga alcance D1.
   - **GitHub Pages deshabilitado:** el repo publicaba en `alexdechile.github.io/wa` con build **Jekyll** (rama `main`, ruta `/`), que no corresponde a este proyecto y gastaba runners en cada push. Sitio eliminado, ahora responde 404.
   - **Docs corregidas:** `README.md` y `wrangler.toml` ya no dicen que el deploy es manual ni que `main` no despliega.
 - **Sincronización de Git y Redploy a Producción (2026-10-01)**:
