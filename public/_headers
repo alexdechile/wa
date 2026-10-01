@@ -1,0 +1,23 @@
+/*
+  Cabeceras de seguridad de wa.comerza.cl y del panel interno.
+
+  Cloudflare Pages sirve este archivo como `_headers`. Ojo: estas cabeceras
+  aplican a los **archivos estáticos**; las respuestas de Pages Functions las
+  arma el propio código, así que la API no pasa por acá.
+
+  NO hay `Content-Security-Policy` todavía, a propósito: Tailwind se carga desde
+  `https://cdn.tailwindcss.com`, que inyecta sus estilos en runtime y no admite
+  nonce, así que cualquier CSP que lo cubra necesita `style-src 'unsafe-inline'`
+  y no aporta casi nada. La CSP se agrega junto con el paso de compilar Tailwind
+  (en vez de CDN), que es lo que la vuelve posible.
+*/
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+/panel/*
+  X-Robots-Tag: noindex, nofollow

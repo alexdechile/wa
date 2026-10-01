@@ -139,9 +139,23 @@ export function isSecureRequest(request: Request): boolean {
   return new URL(request.url).protocol === 'https:';
 }
 
-/** Secreto de servidor para HMAC y para hablar con el puente. */
+/**
+ * Secreto de servidor para el HMAC de códigos y sesiones.
+ *
+ * Antes era `BRIDGE_TOKEN`, el mismo token con el que se autentica el puente de
+ * wacli. Eso ataba dos dominios de seguridad distintos: rotar el token del
+ * puente invalidaba el panel, y una filtración del panel daba acceso al puente
+ * (y con él, el WhatsApp del negocio). Son secretos separados.
+ */
 export function getSecret(env: Env): string | null {
-  return env.BRIDGE_TOKEN && env.BRIDGE_TOKEN.length >= 24 ? env.BRIDGE_TOKEN : null;
+  const secret = env.PANEL_AUTH_SECRET;
+  return secret && secret.length >= 32 ? secret : null;
+}
+
+/** Token del puente de wacli. Vive en `_lib/bridge.ts` y no se usa para autenticar. */
+export function getBridgeToken(env: Env): string | null {
+  const token = env.BRIDGE_TOKEN;
+  return token && token.length >= 24 ? token : null;
 }
 
 // El cliente del puente vive en `_lib/bridge.ts`; se reexporta para que los

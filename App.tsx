@@ -8,6 +8,7 @@ import { SwipeTutorial } from './components/SwipeTutorial';
 import { StoreIcon, ChatIcon, CartIcon, EmailIcon, MaterialsIcon } from './components/icons';
 import { ComerzaLogo } from './components/ComerzaLogo';
 import type { ContactButtonType, TargetLine, TrackEntry } from './types';
+import { deriveTargetLine } from './lib/routing';
 
 /**
  * Líneas de atención (ver openspec/proposals/comerza-door-experiment/spec.md):
@@ -73,7 +74,10 @@ const App: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
     localStorage.setItem('comerzaContactCounter', JSON.stringify({ date: today, count: newCount }));
 
-    // 2. Send data to serverless function for persistent logging
+    // 2. Send data to serverless function for persistent logging.
+    // `isHumanHours`, `isLunchBreak` y `targetLine` viajan solo como contexto:
+    // el servidor los recalcula y es lo que queda guardado. Ver
+    // `lib/routing.ts`, que es la regla compartida por los dos lados.
     const trackPayload: TrackEntry = {
       timestamp: new Date().toISOString(),
       button: buttonType,
@@ -95,8 +99,10 @@ const App: React.FC = () => {
 
   }, [contactsToday, isHumanHours, isLunchBreak]);
 
-  const handleContactClick = (type: ContactButtonType, targetLine: TargetLine, url: string) => {
-    trackContact(type, targetLine);
+  // La línea se deriva acá, con la misma función que usa el servidor. Antes cada
+  // botón traía su `targetLine` escrito a mano y el edge le creía al cliente.
+  const handleContactClick = (type: ContactButtonType, url: string) => {
+    trackContact(type, deriveTargetLine(type, isHumanHours));
     window.open(url, '_blank', 'noopener,noreferrer');
   };
   
@@ -127,7 +133,6 @@ const App: React.FC = () => {
   // En horario hábil atiende una persona; fuera de horario (noche, fin de semana
   // y almuerzo) atiende el asistente.
   const conversationPhone = isHumanHours ? HUMAN_WHATSAPP : ASSISTANT_WHATSAPP;
-  const conversationTarget: TargetLine = isHumanHours ? 'human' : 'assistant';
 
   return (
     <div 
@@ -159,27 +164,27 @@ const App: React.FC = () => {
             <ContactButton
               icon={<StoreIcon />}
               text="Visitar Tienda Online"
-              onClick={() => handleContactClick('store', 'web', STORE_URL)}
+              onClick={() => handleContactClick('store', STORE_URL)}
             />
             <ContactButton
               icon={<ChatIcon />}
               text="Consultas y Soporte"
-              onClick={() => handleContactClick('support', conversationTarget, waLink(conversationPhone, PREFILL_SUPPORT))}
+              onClick={() => handleContactClick('support', waLink(conversationPhone, PREFILL_SUPPORT))}
             />
             <ContactButton
               icon={<CartIcon />}
               text="Ventas y Cotizaciones"
-              onClick={() => handleContactClick('sales', conversationTarget, waLink(conversationPhone, PREFILL_SALES))}
+              onClick={() => handleContactClick('sales', waLink(conversationPhone, PREFILL_SALES))}
             />
             <ContactButton
               icon={<MaterialsIcon />}
               text="Enviar Lista de Materiales"
-              onClick={() => handleContactClick('materials', 'assistant', waLink(ASSISTANT_WHATSAPP, PREFILL_MATERIALS))}
+              onClick={() => handleContactClick('materials', waLink(ASSISTANT_WHATSAPP, PREFILL_MATERIALS))}
             />
              <ContactButton
               icon={<EmailIcon />}
               text="Enviar un Email"
-              onClick={() => handleContactClick('email', 'email', `mailto:${SALES_EMAIL}`)}
+              onClick={() => handleContactClick('email', `mailto:${SALES_EMAIL}`)}
             />
           </div>
         </div>

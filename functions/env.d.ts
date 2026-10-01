@@ -34,13 +34,18 @@ interface Env {
   DB?: D1Database;
   /** URL del puente de wacli en el host (ver repositorio bim). */
   BRIDGE_URL?: string;
-  /** Secreto compartido con el puente de wacli. */
+  /** Secreto compartido con el puente de wacli. Da acceso al WhatsApp del negocio. */
   BRIDGE_TOKEN?: string;
+  /**
+   * Secreto para el HMAC de códigos OTP y de sesiones del panel. Deliberadamente
+   * distinto de `BRIDGE_TOKEN`: son dos dominios de seguridad separados.
+   */
+  PANEL_AUTH_SECRET?: string;
 }
 
 interface IncomingRequest extends Request {
   /** Metadatos de Cloudflare: no existen en el DOM pero sí en el runtime. */
-  cf?: { country?: string };
+  cf?: { country?: string; clientIp?: string };
 }
 
 // Fix: Add definition for EventContext to resolve "Cannot find name 'EventContext'" error.

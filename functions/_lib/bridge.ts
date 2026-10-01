@@ -81,6 +81,12 @@ export interface LeadNotification {
   trigger: 'T1' | 'T2' | 'T3';
   button?: string;
   detectedAt?: string;
+  /**
+   * Hilo de correlación que el puente ya aceptaba y nunca se usó. Acá lleva
+   * `wa:evt:<id del evento>`, que es lo que permite unir el clic de D1 con el
+   * lead que quedó registrado en el SQLite del host.
+   */
+  clientRef?: string;
 }
 
 export interface BridgeLead {
@@ -90,6 +96,8 @@ export interface BridgeLead {
   source: string;
   button?: string | null;
   status: string;
+  /** Hilo de correlación con el clic que lo originó, si viene del enrutador. */
+  clientRef?: string | null;
   alertedAt?: string | null;
   remindedAt?: string | null;
   escalatedAt?: string | null;
@@ -123,14 +131,15 @@ export async function fetchOpenLeads(
  * Avisa al puente que alguien se dirigió a la línea humana.
  *
  * El lazo de supervisión del host es quien alerta al supervisor; aquí solo se
- * registra el hecho. Un fallo de aviso no debe afectar al cliente, así que el
- * llamador lo dispara sin bloquear la respuesta.
+ * registra el hecho. Devuelve el `id` del lead creado para poder correlacionarlo
+ * con el clic en D1, o `null` si el puente no respondió. Un fallo de aviso no
+ * debe afectar al cliente, así que el llamador lo dispara sin bloquear.
  */
 export async function notifyLead(
   env: Env,
   lead: LeadNotification,
   timeoutMs = 5000,
-): Promise<boolean> {
+): Promise<string | null> {
   const response = await callBridge(
     env,
     '/leads',
@@ -141,5 +150,14 @@ export async function notifyLead(
     },
     timeoutMs,
   );
-  return response?.ok === true;
+
+  if (!response?.ok) return null;
+
+  try {
+    // El puente responde 201 { id }.
+    const body = (await response.json()) as { id?: unknown };
+    return typeof body.id === 'string' && body.id ? body.id : null;
+  } catch {
+    return null;
+  }
 }

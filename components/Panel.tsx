@@ -7,6 +7,8 @@ interface PanelEvent {
   targetLine: string | null;
   country: string | null;
   outOfHours: boolean;
+  /** Lead del puente que este clic generó, si llegó a crearse. */
+  leadId: string | null;
 }
 
 interface PanelLead {
@@ -14,12 +16,17 @@ interface PanelLead {
   detectedAt: string;
   button: string | null;
   status: string;
+  /** País y hora del clic en D1 que originó el lead, si se pudo correlacionar. */
+  country: string | null;
+  clickedAt: string | null;
 }
 
 interface Summary {
   email: string;
   date: string;
   total: number;
+  /** `true` cuando se topó el tope de filas leídas: los totales son un piso. */
+  truncated: boolean;
   byButton: Record<string, number>;
   lunch: number;
   outOfHours: number;
@@ -265,6 +272,13 @@ export const Panel: React.FC = () => {
               />
             </div>
 
+            {summary.truncated && (
+              <p className="text-amber-300 bg-amber-500/10 rounded-xl px-4 py-3">
+                Hubo más clics que los que alcanza a leer el resumen: las cifras de
+                arriba son un piso, no el total del día.
+              </p>
+            )}
+
             <StatusLine bridge={summary.bridge} />
 
             <section>
@@ -313,6 +327,9 @@ export const Panel: React.FC = () => {
                         <span className="text-lg">
                           {TIME_FORMATTER.format(new Date(lead.detectedAt))} ·{' '}
                           {lead.button ? label(lead.button) : 'contacto'}
+                          {/* Correlacionado con el clic en D1: antes el lead era
+                              una fila suelta, sin país ni contexto del contacto. */}
+                          {lead.country && <span className="text-gray-400"> · {lead.country}</span>}
                         </span>
                         <span className="text-gray-400 text-base">
                           {LEAD_STATUS_LABELS[lead.status] ?? lead.status}
