@@ -55,6 +55,8 @@ jobs:
       # no lo encuentra e instala su wrangler@3 por defecto, que **no sube las
       # Pages Functions**: el deploy terminaba en verde y dejaba /api/* sin
       # funciones, sirviendo el HTML del SPA o respondiendo 405.
+      - uses: actions/checkout@v5
+
       - run: npm ci
 
       - uses: actions/download-artifact@v4
