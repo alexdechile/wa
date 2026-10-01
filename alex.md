@@ -1,6 +1,15 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
+- **CI/CD con GitHub Actions (2026-10-01)**:
+  - **Workflow `.github/workflows/deploy.yml`:** dos jobs. `verify` corre `npm ci`, `typecheck`, `lint` y `build`, y sube `dist` como artefacto. `deploy` baja el artefacto y publica.
+    - Push a `main` → Cloudflare Pages rama `production` (publica en wa.comerza.cl).
+    - Pull request a `main` → genera preview; si el PR viene de un fork, solo compila, porque los forks no reciben secretos.
+    - `workflow_dispatch` para correrlo a mano desde la pestaña Actions.
+  - **Secretos en GitHub:** `CLOUDFLARE_API_TOKEN` (secreto) y `CLOUDFLARE_ACCOUNT_ID` (variable, `48c58c35...`). El token viene del archivo de credenciales del servidor y alcanza el proyecto `wa`.
+  - **Primer run en verde:** `36893182137`, que dejó producción en el deployment `6c60856e` de Pages. Verificado en vivo: `/` 200, `/panel/` 200, `/favicon.svg` 200, `/api/time` responde.
+  - **GitHub Pages deshabilitado:** el repo publicaba en `alexdechile.github.io/wa` con build **Jekyll** (rama `main`, ruta `/`), que no corresponde a este proyecto y gastaba runners en cada push. Sitio eliminado, ahora responde 404.
+  - **Docs corregidas:** `README.md` y `wrangler.toml` ya no dicen que el deploy es manual ni que `main` no despliega.
 - **Sincronización de Git y Redploy a Producción (2026-10-01)**:
   - **Repo:** `main` estaba divergido. Rebase del commit local de bitácora sobre `origin/main` (traía `feat: agregar favicon svg simulando hoja de notas`) y push. Rama sincronizada en `5b27ff7`.
   - **Build:** `npm run typecheck`, `npm run lint` y `npm run build` sin errores ni advertencias.

@@ -1,10 +1,11 @@
 # Configuración de Cloudflare Pages para wa.comerza.cl
 #
 # El proyecto de Pages se llama `wa` (no confundir con la base D1, que se llama
-# `comerza-wa`). El proyecto NO tiene integración con Git y su **rama de
-# producción es `production`**: un merge a `main` no publica nada, y desplegar
-# con `--branch main` crea un PREVIEW. Así estuvo el sitio sirviendo código de
-# hace 10 meses sin que se notara.
+# `comerza-wa`). Su **rama de producción es `production`**: desplegar con
+# `--branch main` crea un PREVIEW y no publica en wa.comerza.cl.
+#
+# El despliegue normal lo hace GitHub Actions en cada push a `main`
+# (ver .github/workflows/deploy.yml). Este comando queda para emergencias:
 #
 #   npm run build
 #   npx wrangler pages deploy dist --project-name wa --branch production

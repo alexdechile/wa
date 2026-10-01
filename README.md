@@ -41,8 +41,19 @@ npm run build
 
 ## Despliegue
 
-El proyecto de Pages se llama **`wa`** y **no** tiene integración con Git. Su
-**rama de producción es `production`**:
+El despliegue es **automático con GitHub Actions** (`.github/workflows/deploy.yml`).
+No hay que compilar ni desplegar a mano:
+
+| Evento | Qué hace |
+| --- | --- |
+| Push a `main` | `npm ci` → typecheck → lint → build → publica en la rama `production` de Pages |
+| Pull request a `main` | Verifica y compila. Además genera *preview* si el PR viene del mismo repo |
+| `workflow_dispatch` | Ejecución manual desde la pestaña Actions |
+
+El sitio real es <https://wa.comerza.cl>. El proyecto de Pages se llama `wa` y su
+**rama de producción es `production`**, no `main`.
+
+Para desplegar a mano (emergencias, desde una máquina con `wrangler` autenticado):
 
 ```bash
 npm run build
@@ -50,8 +61,13 @@ npx wrangler pages deploy dist --project-name wa --branch production
 ```
 
 **Cuidado:** desplegar con `--branch main` (o cualquier otra rama) crea un
-*preview* en `main.wa-8rp.pages.dev`, no publica en `wa.comerza.cl`. Un merge a
-`main` no despliega nada por sí solo.
+*preview* en `main.wa-8rp.pages.dev`, no publica en `wa.comerza.cl`.
+
+### Secretos del workflow
+
+- `CLOUDFLARE_API_TOKEN` (secreto): token de API de Cloudflare con permiso de
+  edición de Pages.
+- `CLOUDFLARE_ACCOUNT_ID` (variable): `48c58c35ad8f564abc5a8aa0de991aee`.
 
 ## Telemetría
 
