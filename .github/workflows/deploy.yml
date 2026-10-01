@@ -51,10 +51,27 @@ jobs:
     # En push a main publica en la rama de produccion; en PR, preview.
     # wrangler toma la rama del evento si no se le pasa --branch.
     steps:
+      # `wrangler` es devDependency del proyecto. Sin esto, `wrangler-action`
+      # no lo encuentra e instala su wrangler@3 por defecto, que **no sube las
+      # Pages Functions**: el deploy terminaba en verde y dejaba /api/* sin
+      # funciones, sirviendo el HTML del SPA o respondiendo 405.
+      - run: npm ci
+
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist
+
+      # Antes de publicar el código. Las migraciones son idempotentes (D1 las
+      # registra en `d1_migrations`), asi que este paso no hace nada cuando ya
+      # estan aplicadas. Sin esto, un deploy que espera columnas nuevas se
+      # rompe en produccion y hay que acordarse de correrlas a mano.
+      - name: Aplicar migraciones D1
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: npx wrangler d1 migrations apply comerza-wa --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Desplegar en produccion
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -64,11 +81,39 @@ jobs:
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name wa --branch production
 
-      # Los PRs desde forks no reciben secretos, asi que alli solo se compila.
       - name: Desplegar preview
+        # Los PRs desde forks no reciben secretos, asi que alli solo se compila.
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name wa --branch ${{ github.head_ref }}
+
+      # Un deploy puede "terminar bien" y aun así publicar un sitio sin API.
+      # Esto es lo que paso cuando wrangler@3 subio solo los estaticos: el run
+      # quedo en verde y /api/time empezo a devolver el HTML del SPA.
+      - name: Verificar que la API quedo viva
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          base="https://wa.comerza.cl"
+          # Reintento: la propagacion del deployment no es instantanea.
+          for intento in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 20 "$base/api/time" | grep -q '"isHumanHours"'; then
+              echo "api/time responde correctamente"
+              break
+            fi
+            echo "intento $intento: la API aun no responde, reintentando..."
+            sleep 10
+          done
+          curl -fsS --max-time 20 "$base/api/time" | grep -q '"isHumanHours"'
+          # Un POST invalido debe dar 400 de la funcion, no 405 de "no hay funcion".
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+            -X POST "$base/api/track" -H 'content-type: application/json' \
+            -d '{"button":"__smoke_test__"}')
+          if [ "$code" != "400" ]; then
+            echo "FALLO: /api/track respondio $code (se esperaba 400): las Functions no estan desplegadas"
+            exit 1
+          fi
+          echo "La API responde en produccion"
