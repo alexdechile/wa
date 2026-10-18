@@ -160,6 +160,13 @@ functions/_lib/bridge.ts       Cliente del puente de wacli
 migrations/                    Esquema D1
 ```
 
+## Capturas de pantalla
+
+En [`docs/capturas/`](docs/capturas/) hay capturas reales de producción y, en
+[`docs/capturas/ascii.md`](docs/capturas/ascii.md), la versión en texto para
+agentes sin visión. Si un cambio toca la UI, regenerarlas con
+`node docs/capturas/capturar.mjs` y actualizar el ASCII.
+
 ## Contexto
 
 Este enrutador es la **puerta humana** del ecosistema. La puerta de datos —el
