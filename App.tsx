@@ -29,7 +29,7 @@ const SALES_EMAIL = 'ventas@comerza.cl';
 const PREFILL_SUPPORT = encodeURIComponent('Hola, necesito ayuda con...');
 const PREFILL_SALES = encodeURIComponent('Hola, quisiera cotizar...');
 const PREFILL_MATERIALS = encodeURIComponent(
-  'Hola, quiero cotizar una lista de materiales. Se la envío en foto, texto o Excel:'
+  'Hola, quiero cotizar una lista de materiales. Se la envío en foto, texto, Excel o el modelo IFC de la obra:'
 );
 
 const waLink = (phone: string, text: string) => `https://wa.me/${phone}?text=${text}`;
@@ -181,6 +181,9 @@ const App: React.FC = () => {
               text="Enviar Lista de Materiales"
               onClick={() => handleContactClick('materials', waLink(ASSISTANT_WHATSAPP, PREFILL_MATERIALS))}
             />
+            <p className="text-base sm:text-lg text-white/70 -mt-1 text-center px-4">
+              ¿Tienes el modelo del arquitecto? También aceptamos archivos IFC (BIM).
+            </p>
              <ContactButton
               icon={<EmailIcon />}
               text="Enviar un Email"
