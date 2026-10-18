@@ -160,7 +160,7 @@ const App: React.FC = () => {
             line2={scheduleMessage}
           />
           
-          <div className="mt-10 flex flex-col items-center gap-y-5 w-full">
+          <div className="mt-8 sm:mt-10 flex flex-col items-center gap-y-4 sm:gap-y-5 w-full">
             <ContactButton
               icon={<StoreIcon />}
               text="Visitar Tienda Online"
@@ -181,7 +181,7 @@ const App: React.FC = () => {
               text="Enviar Lista de Materiales"
               onClick={() => handleContactClick('materials', waLink(ASSISTANT_WHATSAPP, PREFILL_MATERIALS))}
             />
-            <p className="text-base sm:text-lg text-white/70 -mt-1 text-center px-4">
+            <p className="text-sm sm:text-base text-white/70 -mt-1 leading-tight text-center px-4">
               ¿Tienes el modelo del arquitecto? También aceptamos archivos IFC (BIM).
             </p>
              <ContactButton
