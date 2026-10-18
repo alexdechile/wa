@@ -3,8 +3,10 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // `.wrangler` es estado local de desarrollo (base D1 local, bundles
-  // generados), no código del proyecto.
-  { ignores: ['dist/**', 'node_modules/**', '.wrangler/**'] },
+  // generados), no código del proyecto. `docs/capturas/capturar.mjs` es una
+  // herramienta de documentación que corre con Node y Playwright, fuera del
+  // build de la app.
+  { ignores: ['dist/**', 'node_modules/**', '.wrangler/**', 'docs/capturas/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
