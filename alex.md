@@ -1,6 +1,14 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
+- **Informe matutino unificado (08:30) y escalamiento SLA en Canal Ventas (2026-10-20)**:
+  - **Informe matutino ejecutivo diario:** Despacho automático a las 08:30 AM (días hábiles) con el balance consolidado de las últimas 24 horas de ambas líneas:
+    - *Línea Ventas (`ventas1`):* Clientes totales que escribieron, cumplimientos de SLA (<5 min), alertas de SLA disparadas y listado de números pendientes (si los hay).
+    - *Línea Asistente (`asistente`):* Conversaciones/consultas web, requerimientos tomados y leads derivados a ventas.
+    - Envío sin texto abrumador, despachado simultáneamente a Iván (`56993206000`) y Alex (`56992215761`).
+  - **Supervisión de `ventas1` con doble alerta:** Si un cliente escribe y pasan 5 minutos en horario hábil sin respuesta del encargado, la alerta de WhatsApp se envía inmediatamente a ambos destinos a través de la línea del asistente.
+  - **Archivado automático de tickets:** Los tickets no atendidos de más de 24 horas se marcan como `expired` para mantener la cola limpia y rápida.
+  - **Fix de binario systemd:** Corrección en las unidades de usuario (`comerza-supervision-ventas.service`, `comerza-supervision.service` y `comerza-bridge.service`) para apuntar al ejecutable nativo de pnpm (`~/.local/share/pnpm/bin/pnpm`), evitando fallos `203/EXEC` provocados por el shim sin shebang de npm global.
 - **Endurecimiento del enrutador y correlación con leads (2026-10-01)**:
   - **Dos agujeros de seguridad cerrados**, ambos explotables sin autenticación:
     - **DoS permanente del panel.** `/api/track` aceptaba cualquier texto como `timestamp` y lo guardaba crudo. `/api/panel/summary` lo formateaba con `Intl` sin `try/catch`, así que un solo POST dejaba una fila que hacía que **el panel entero quedara en 500 para siempre**. Ahora el reloj es del servidor, el filtro por forma de fecha va en SQL y hay una defensa extra en JS.
