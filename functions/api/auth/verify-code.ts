@@ -11,6 +11,7 @@ import {
   sessionCookie,
   timingSafeEqualHex,
 } from '../../_lib/auth';
+import { TOO_LARGE_MESSAGE, readJsonBody } from '../../_lib/body';
 
 const INVALID = 'Código inválido o vencido';
 
@@ -24,13 +25,16 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   let email = '';
   let code = '';
 
-  try {
-    const payload = (await request.json()) as { email?: unknown; code?: unknown };
-    if (typeof payload?.email === 'string') email = payload.email.trim().toLowerCase();
-    if (typeof payload?.code === 'string') code = payload.code.trim();
-  } catch {
-    return json({ success: false, message: 'Solicitud inválida' }, 400);
+  const parsed = await readJsonBody<{ email?: unknown; code?: unknown }>(request);
+  if (parsed.ok === false) {
+    return parsed.reason === 'too_large'
+      ? json({ success: false, message: TOO_LARGE_MESSAGE }, 413)
+      : json({ success: false, message: 'Solicitud inválida' }, 400);
   }
+  if (typeof parsed.value?.email === 'string') {
+    email = parsed.value.email.trim().toLowerCase();
+  }
+  if (typeof parsed.value?.code === 'string') code = parsed.value.code.trim();
 
   if (!email || !/^\d{6}$/.test(code)) {
     return json({ success: false, message: INVALID }, 401);

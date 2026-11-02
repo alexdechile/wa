@@ -16,6 +16,7 @@ import { deriveTargetLine, isHumanLineLead, leadTrigger } from '../../lib/routin
 import { getTimeInfo } from '../_lib/schedule';
 import { clientKey, consumeFixedWindow, retryAfterSeconds } from '../_lib/ratelimit';
 import { notifyLead } from '../_lib/bridge';
+import { TOO_LARGE_MESSAGE, readJsonBody } from '../_lib/body';
 
 const VALID_BUTTONS: ContactButtonType[] = ['store', 'support', 'sales', 'materials', 'email'];
 
@@ -43,17 +44,18 @@ function json(
 
 // This is a Cloudflare Pages function that handles POST requests
 export const onRequestPost: PagesFunction = async ({ request, env, waitUntil }) => {
-  let payload: Record<string, unknown>;
+  const parsed = await readJsonBody<Record<string, unknown>>(request);
+  if (parsed.ok === false) {
+    return parsed.reason === 'too_large'
+      ? json({ success: false, message: TOO_LARGE_MESSAGE }, 413)
+      : json({ success: false, message: 'Invalid request body' }, 400);
+  }
 
-  try {
-    const body = await request.json();
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return json({ success: false, message: 'Invalid request body' }, 400);
-    }
-    payload = body as Record<string, unknown>;
-  } catch {
+  const body = parsed.value;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return json({ success: false, message: 'Invalid request body' }, 400);
   }
+  const payload: Record<string, unknown> = body;
 
   if (typeof payload.button !== 'string' || !VALID_BUTTONS.includes(payload.button as ContactButtonType)) {
     return json({ success: false, message: 'Unknown button' }, 400);

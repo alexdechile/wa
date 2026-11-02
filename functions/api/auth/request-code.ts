@@ -11,6 +11,7 @@ import {
   json,
   sendWhatsApp,
 } from '../../_lib/auth';
+import { TOO_LARGE_MESSAGE, readJsonBody } from '../../_lib/body';
 
 /**
  * Paso 1 del acceso al panel: pedir el código.
@@ -21,11 +22,14 @@ import {
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
   let email = '';
 
-  try {
-    const payload = (await request.json()) as { email?: unknown };
-    if (typeof payload?.email === 'string') email = payload.email.trim().toLowerCase();
-  } catch {
-    return json({ success: false, message: 'Solicitud inválida' }, 400);
+  const parsed = await readJsonBody<{ email?: unknown }>(request);
+  if (parsed.ok === false) {
+    return parsed.reason === 'too_large'
+      ? json({ success: false, message: TOO_LARGE_MESSAGE }, 413)
+      : json({ success: false, message: 'Solicitud inválida' }, 400);
+  }
+  if (typeof parsed.value?.email === 'string') {
+    email = parsed.value.email.trim().toLowerCase();
   }
 
   if (!email || !email.includes('@') || email.length > 254) {
