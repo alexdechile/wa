@@ -6,6 +6,13 @@
  * a qué línea se le avisa al supervisor. Antes la regla vivía solo en el
  * navegador (`App.tsx`), y el servidor le creía al `targetLine` que mandaba el
  * cliente: cualquiera podía declarar que era horario hábil.
+ *
+ * Desde 2026-11-02 el cliente **no cambia de número según la hora**. Antes, fuera
+ * de horario, los botones lo mandaban al asistente (56226832189), que prometía
+ * atención y no la daba: el mensaje quedaba en una conversación que nadie
+ * miraba. Ahora todo el tráfico de conversación va a la línea del vendedor
+ * (56226830645), donde un respondedor automático entrega la dirección y el
+ * horario al instante, a cualquier hora, y el requerimiento espera ahí mismo.
  */
 
 import type { ContactButtonType, TargetLine } from '../types';
@@ -20,7 +27,13 @@ export function isLeadButton(button: ContactButtonType): boolean {
   return button === 'sales' || button === 'support';
 }
 
-/** Línea a la que va un clic, según el botón y si hay alguien atendiendo. */
+/**
+ * Línea a la que va un clic.
+ *
+ * `isHumanHours` ya no cambia el destino —se sigue recibiendo porque la firma la
+ * comparten el navegador y el edge— pero se deja explícito para que nadie
+ * reintroduzca el salto al asistente sin entender por qué se quitó.
+ */
 export function deriveTargetLine(
   button: ContactButtonType,
   isHumanHours: boolean,
@@ -28,10 +41,18 @@ export function deriveTargetLine(
   if (button === 'store') return 'web';
   if (button === 'email') return 'email';
   if (button === 'materials') return 'assistant';
-  return isHumanHours ? 'human' : 'assistant';
+  void isHumanHours;
+  return 'human';
 }
 
-/** `true` si el clic fue a la línea humana por un botón que genera lead. */
+/**
+ * `true` si el clic merece que el supervisor despierte a alguien.
+ *
+ * Sigue dependiendo del horario, y a propósito: el destino del mensaje ya es la
+ * línea humana a cualquier hora, pero avisar a un supervisor a las 2 de la
+ * mañana no sirve — no hay a quién despertar. El requerimiento igual queda
+ * registrado y esperando en la conversación del vendedor.
+ */
 export function isHumanLineLead(
   button: ContactButtonType,
   isHumanHours: boolean,

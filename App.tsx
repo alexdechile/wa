@@ -15,11 +15,14 @@ import { deriveTargetLine } from './lib/routing';
  *
  * - HUMAN: atención de personas, lunes a viernes de 8:30 a 13:00 y de 14:00 a
  *   17:30.
- * - ASSISTANT: línea de wacli, el asistente que recibe requerimientos y
- *   responde 24/7. Nunca cotiza: recibe y deriva a un humano.
+ * - ASSISTANT: línea de wacli, recibe listas de materiales y requerimientos.
+ *   Nunca cotiza.
  *
- * En horario hábil se ofrecen ambas. Fuera de horario (noche, fin de semana y
- * almuerzo) todo el tráfico de conversación va al asistente.
+ * Los botones de conversación van siempre a la línea del vendedor, a cualquier
+ * hora: fuera de horario un respondedor automático entrega la dirección y el
+ * horario, y el requerimiento espera ahí mismo. Antes, de noche, el cliente era
+ * mandado al asistente —un número aparte que no tenía por qué conocer— y ahí el
+ * mensaje quedaba sin respuesta.
  */
 const HUMAN_WHATSAPP = '+56226830645';
 const ASSISTANT_WHATSAPP = '+56226832189';
@@ -132,7 +135,8 @@ const App: React.FC = () => {
 
   // En horario hábil atiende una persona; fuera de horario (noche, fin de semana
   // y almuerzo) atiende el asistente.
-  const conversationPhone = isHumanHours ? HUMAN_WHATSAPP : ASSISTANT_WHATSAPP;
+  // Un solo número para conversar, a cualquier hora.
+  const conversationPhone = HUMAN_WHATSAPP;
 
   return (
     <div 
