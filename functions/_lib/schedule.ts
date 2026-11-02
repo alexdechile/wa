@@ -84,7 +84,9 @@ export function getTimeInfo(now: Date = new Date()): TimeInfo {
       isHumanHours: false,
       isLunchBreak: true,
       statusMessage: 'Estamos en pausa de almuerzo',
-      scheduleMessage: 'Nuestro asistente te responde ahora mismo',
+      // Sin promesas de atención por otra vía: lo único verificado es que
+      // volvemos a la hora del horario. Ver nota en el bloque de abajo.
+      scheduleMessage: 'Volvemos a las 14:00',
     };
   }
 
@@ -92,7 +94,10 @@ export function getTimeInfo(now: Date = new Date()): TimeInfo {
     isHumanHours: false,
     isLunchBreak: false,
     statusMessage: 'Fuera de horario de atención',
-    scheduleMessage:
-      'Nuestro asistente te responde ahora; en horario hábil te contacta una persona',
+    // Decía "Nuestro asistente te responde ahora; en horario hábil te contacta
+    // una persona". Eso prometía atención por otra vía y no era cierto: el
+    // cliente lo único que necesita saber es el horario. El sitio se ve sobre
+    // todo en el teléfono, así que el texto tiene que ser corto y sin promesas.
+    scheduleMessage: 'Lunes a viernes de 8:30 a 13:00 y de 14:00 a 17:30',
   };
 }
