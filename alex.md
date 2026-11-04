@@ -1,6 +1,15 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
+- **Integración de Línea Legacy en Panel Admin (2026-11-04)**:
+  - **Tercera línea wacli (`legacy`):** Dispositivo vinculado para la línea fija histórica (+56 2 2683 5288).
+  - **Sincronización laboral continua (08:30 a 19:00, Lun-Vie):** Servicio `wacli-sync-legacy.service` orquestado por `wacli-sync-legacy-start.timer` (08:30) y `wacli-sync-legacy-stop.timer` (19:00). Standby completo fuera de horario.
+  - **Registro en Panel Admin:** Endpoint `/legacy/activity` en el puente (`bim`) expuesto a Pages Functions `/api/panel/summary` y renderizado en `Panel.tsx`: KPIs (Llamadas In, Mensajes In, Mensajes Out) y bitácora de actividad filtrada por horario de trabajo.
+- **Rescate de la línea ventas1 tras desvinculación y arreglo de tres fallos (2026-10-30)**:
+  - **Incidente:** a las 12:41 el encargado desvinculó los dispositivos de WhatsApp de `ventas1` desde el teléfono (401 `logged out from another device`). El sync entró en bucle: 65 reinicios con `not authenticated` hasta las 13:14, cuando Alex revinculó. Se estuvo ciego ~33 min. Al reconectar se reprodujo el backlog (6 eventos), sin pérdida observada. **Causa humana, no del update de Linux** (integridad SQLite `ok`, todos los servicios arriba, nativos y túnel sanos).
+  - **Watchdog nuevo:** `watchdog-ventas1.timer` cada 2 min (`~/.local/bin/watchdog-ventas1.sh`) avisa por WhatsApp a Iván (`56993206000`) y Alex (`56992215761`) — con reintento cada 20 min y aviso de reconexión — si el sync queda inactivo o el journal muestra `not authenticated` / `logged out` / `Failed with result`. Envía por la línea del asistente para no depender de la línea caída.
+  - **`alertas-venta.service` nunca había enviado nada** (desde el 12-oct): la unit no declaraba `PATH`, así que no encontraba el `wacli` de Homebrew (913 fallos `No such file or directory`). Además `config.json` apuntaba el destino a la propia línea de ventas, y wacli rechaza escribirte a ti mismo. Corregido: `PATH` explícito, `destino` = Iván y Alex separados por coma, y `alertas.py` itera varios destinos.
+  - **Cota de almacenamiento** en el sync de ventas1: `--max-db-size 2GB --max-messages 400000` (antes `sync storage is uncapped`).
 - **Informe matutino unificado (08:30) y escalamiento SLA en Canal Ventas (2026-10-20)**:
   - **Informe matutino ejecutivo diario:** Despacho automático a las 08:30 AM (días hábiles) con el balance consolidado de las últimas 24 horas de ambas líneas:
     - *Línea Ventas (`ventas1`):* Clientes totales que escribieron, cumplimientos de SLA (<5 min), alertas de SLA disparadas y listado de números pendientes (si los hay).

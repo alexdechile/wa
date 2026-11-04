@@ -161,3 +161,55 @@ export async function notifyLead(
     return null;
   }
 }
+
+export interface LegacyActivity {
+  date: string;
+  isWorkday: boolean;
+  workHours: { start: string; end: string };
+  stats: {
+    callsIn: number;
+    messagesIn: number;
+    messagesOut: number;
+    total: number;
+  };
+  calls: Array<{
+    chatJid: string;
+    chatName: string;
+    outcome: string;
+    durationSecs: number;
+    timestamp: string;
+  }>;
+  messages: Array<{
+    chatJid: string;
+    chatName: string;
+    direction: 'in' | 'out';
+    text: string;
+    timestamp: string;
+  }>;
+}
+
+/**
+ * Consulta el registro de actividad de la línea Legacy en horario comercial.
+ * Devuelve `null` si el puente no responde.
+ */
+export async function fetchLegacyActivity(
+  env: Env,
+  date?: string,
+  timeoutMs = 5000,
+): Promise<LegacyActivity | null> {
+  const query = date ? `?date=${encodeURIComponent(date)}` : '';
+  const response = await callBridge(
+    env,
+    `/legacy/activity${query}`,
+    { method: 'GET' },
+    timeoutMs,
+  );
+  if (!response?.ok) return null;
+
+  try {
+    return (await response.json()) as LegacyActivity;
+  } catch {
+    return null;
+  }
+}
+

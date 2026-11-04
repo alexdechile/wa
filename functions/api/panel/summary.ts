@@ -1,7 +1,11 @@
 // File: functions/api/panel/summary.ts
 
 import { fetchBridgeHealth, getSessionEmail, json } from '../../_lib/auth';
-import { fetchOpenLeads, type BridgeLead } from '../../_lib/bridge';
+import {
+  fetchLegacyActivity,
+  fetchOpenLeads,
+  type BridgeLead,
+} from '../../_lib/bridge';
 
 interface ContactEventRow {
   id: number;
@@ -99,6 +103,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
 
   const bridge = await fetchBridgeHealth(env);
   const openLeads = await fetchOpenLeads(env);
+  const legacy = await fetchLegacyActivity(env, today);
 
   // Índice id -> evento, para resolver el `clientRef` que manda el puente
   // (`wa:evt:<id>`). Con esto cada lead abierto muestra el país y la hora del
@@ -130,6 +135,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     // Un cero debe poder distinguirse de una falla: `bridge: null` significa
     // "no se pudo consultar", no "el canal está sano".
     bridge,
+    legacy,
     supervision: {
       // `reachable: false` = no se pudo consultar. Distinto de "sin leads".
       reachable: openLeads !== null,

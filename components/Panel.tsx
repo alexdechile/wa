@@ -21,6 +21,36 @@ interface PanelLead {
   clickedAt: string | null;
 }
 
+export interface LegacyCall {
+  chatJid: string;
+  chatName: string;
+  outcome: string;
+  durationSecs: number;
+  timestamp: string;
+}
+
+export interface LegacyMessage {
+  chatJid: string;
+  chatName: string;
+  direction: 'in' | 'out';
+  text: string;
+  timestamp: string;
+}
+
+export interface LegacySummary {
+  date: string;
+  isWorkday: boolean;
+  workHours: { start: string; end: string };
+  stats: {
+    callsIn: number;
+    messagesIn: number;
+    messagesOut: number;
+    total: number;
+  };
+  calls: LegacyCall[];
+  messages: LegacyMessage[];
+}
+
 interface Summary {
   email: string;
   date: string;
@@ -33,6 +63,7 @@ interface Summary {
   toHuman: number;
   toAssistant: number;
   bridge: { connected: boolean; authenticated: boolean } | null;
+  legacy?: LegacySummary | null;
   supervision: {
     reachable: boolean;
     openCount: number;
@@ -338,6 +369,110 @@ export const Panel: React.FC = () => {
                     ))}
                   </ul>
                 </>
+              )}
+            </section>
+
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-semibold">Línea Legacy (+56 2 2683 5288)</h2>
+                <span className="text-xs bg-white/10 text-gray-300 rounded-full px-3 py-1">
+                  Lun-Vie 08:30 a 19:00
+                </span>
+              </div>
+
+              {!summary.legacy ? (
+                <p className="text-gray-400 bg-white/5 rounded-xl px-4 py-3">
+                  No se pudo consultar el registro de la línea legacy.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-amber-300">
+                        {summary.legacy.stats.callsIn}
+                      </div>
+                      <div className="text-xs text-gray-300 mt-1">Llamadas In</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-sky-300">
+                        {summary.legacy.stats.messagesIn}
+                      </div>
+                      <div className="text-xs text-gray-300 mt-1">Msgs In</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-emerald-300">
+                        {summary.legacy.stats.messagesOut}
+                      </div>
+                      <div className="text-xs text-gray-300 mt-1">Msgs Out</div>
+                    </div>
+                  </div>
+
+                  {summary.legacy.calls.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-300 mb-2">
+                        Llamadas entrantes del día
+                      </h3>
+                      <ul className="space-y-2">
+                        {summary.legacy.calls.map((call, idx) => (
+                          <li
+                            key={`call-${idx}-${call.timestamp}`}
+                            className="flex justify-between items-center bg-white/5 rounded-xl px-4 py-2 text-sm"
+                          >
+                            <span>
+                              {TIME_FORMATTER.format(new Date(call.timestamp))} ·{' '}
+                              <span className="font-medium">{call.chatName}</span>
+                            </span>
+                            <span className="text-gray-400">
+                              {call.outcome === 'connected'
+                                ? `Conectada (${call.durationSecs}s)`
+                                : call.outcome === 'missed'
+                                  ? 'Perdida'
+                                  : call.outcome}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {summary.legacy.messages.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-300 mb-2">
+                        Mensajes del día en horario laboral
+                      </h3>
+                      <ul className="space-y-2">
+                        {summary.legacy.messages.slice(0, 10).map((msg, idx) => (
+                          <li
+                            key={`msg-${idx}-${msg.timestamp}`}
+                            className="flex justify-between items-center bg-white/5 rounded-xl px-4 py-2 text-sm"
+                          >
+                            <span className="truncate max-w-[70%]">
+                              {TIME_FORMATTER.format(new Date(msg.timestamp))} ·{' '}
+                              <span className="font-medium">{msg.chatName}</span>:{' '}
+                              <span className="text-gray-300">{msg.text}</span>
+                            </span>
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                msg.direction === 'in'
+                                  ? 'bg-sky-500/20 text-sky-300'
+                                  : 'bg-emerald-500/20 text-emerald-300'
+                              }`}
+                            >
+                              {msg.direction === 'in' ? 'IN' : 'OUT'}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {summary.legacy.calls.length === 0 &&
+                    summary.legacy.messages.length === 0 && (
+                      <p className="text-gray-400 text-sm bg-white/5 rounded-xl px-4 py-3">
+                        Sin llamadas entrantes ni mensajes registrados hoy durante el horario laboral.
+                      </p>
+                    )}
+                </div>
               )}
             </section>
 
