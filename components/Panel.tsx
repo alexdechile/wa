@@ -58,10 +58,18 @@ interface Summary {
   /** `true` cuando se topó el tope de filas leídas: los totales son un piso. */
   truncated: boolean;
   byButton: Record<string, number>;
+  byCountry?: Record<string, number>;
   lunch: number;
   outOfHours: number;
   toHuman: number;
   toAssistant: number;
+  leadsCreated?: number;
+  routingNow?: {
+    isHumanHours: boolean;
+    isLunchBreak: boolean;
+    statusMessage: string;
+    scheduleMessage: string;
+  };
   bridge: { connected: boolean; authenticated: boolean } | null;
   legacy?: LegacySummary | null;
   supervision: {
@@ -109,6 +117,9 @@ export const Panel: React.FC = () => {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadSummary = useCallback(async () => {
     try {
@@ -124,6 +135,7 @@ export const Panel: React.FC = () => {
         return;
       }
       setSummary((await response.json()) as Summary);
+      setLastUpdated(new Date());
       setStep('ready');
     } catch {
       setError('No se pudo conectar con el panel');
@@ -134,6 +146,14 @@ export const Panel: React.FC = () => {
   useEffect(() => {
     void loadSummary();
   }, [loadSummary]);
+
+  useEffect(() => {
+    if (!autoRefresh || step !== 'ready') return undefined;
+    const id = window.setInterval(() => {
+      void loadSummary();
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [autoRefresh, step, loadSummary]);
 
   const requestCode = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -188,8 +208,38 @@ export const Panel: React.FC = () => {
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
     setSummary(null);
+    setAutoRefresh(false);
     setStep('email');
     setMessage('');
+  };
+
+  const copyDailySummary = async () => {
+    if (!summary) return;
+    const buttonLines = Object.keys(summary.byButton)
+      .map((btn): [string, number] => [btn, summary.byButton[btn]])
+      .sort((a, b) => b[1] - a[1])
+      .map(([btn, count]) => `• ${label(btn)}: ${count}`)
+      .join('\n');
+    const legacyLine = summary.legacy
+      ? `\nLínea Legacy: ${summary.legacy.stats.callsIn} llamadas, ${summary.legacy.stats.messagesIn} msgs IN / ${summary.legacy.stats.messagesOut} OUT`
+      : '';
+    const text = [
+      `📊 *Comerza WA · ${summary.date}*`,
+      `Total contactos: ${summary.total} (Humano: ${summary.toHuman}, Asistente: ${summary.toAssistant})`,
+      `Fuera de horario: ${summary.outOfHours} · Almuerzo: ${summary.lunch}`,
+      buttonLines ? `\nPor botón:\n${buttonLines}` : '',
+      legacyLine,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setError('No se pudo copiar al portapapeles');
+    }
   };
 
   const inputClass =
@@ -286,11 +336,29 @@ export const Panel: React.FC = () => {
 
         {step === 'ready' && summary && (
           <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl font-semibold">Contactos del día</h1>
-              <p className="text-gray-300">
-                {summary.date} · sesión de {summary.email}
-              </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="text-3xl font-semibold">Contactos del día</h1>
+                <p className="text-gray-300">
+                  {summary.date} · sesión de {summary.email}
+                  {lastUpdated && ` · act. ${TIME_FORMATTER.format(lastUpdated)}`}
+                </p>
+              </div>
+              {summary.routingNow && (
+                <div
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
+                    summary.routingNow.isHumanHours
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'bg-amber-500/20 text-amber-300'
+                  }`}
+                >
+                  {summary.routingNow.isHumanHours
+                    ? 'En vivo: Humano activo'
+                    : summary.routingNow.isLunchBreak
+                      ? 'En vivo: Almuerzo → Asistente'
+                      : 'En vivo: Fuera de horario → Asistente'}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -310,7 +378,18 @@ export const Panel: React.FC = () => {
               </p>
             )}
 
-            <StatusLine bridge={summary.bridge} />
+            <StatusGrid
+              bridge={summary.bridge}
+              supervisionReachable={summary.supervision.reachable}
+              legacy={summary.legacy ?? null}
+            />
+
+            <FunnelAndCountry
+              toHuman={summary.toHuman}
+              toAssistant={summary.toAssistant}
+              leadsCreated={summary.leadsCreated ?? 0}
+              byCountry={summary.byCountry ?? {}}
+            />
 
             <section>
               <h2 className="text-xl font-semibold mb-3">Por tipo</h2>
@@ -501,9 +580,29 @@ export const Panel: React.FC = () => {
               )}
             </section>
 
-            <button onClick={() => void loadSummary()} className={buttonClass}>
-              Actualizar
-            </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <button onClick={() => void loadSummary()} className={buttonClass}>
+                Actualizar
+              </button>
+              <button
+                type="button"
+                onClick={() => setAutoRefresh((prev) => !prev)}
+                className={`h-[64px] rounded-2xl font-semibold text-lg transition-colors border-2 ${
+                  autoRefresh
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
+                    : 'bg-white/10 border-transparent hover:bg-white/20 text-white'
+                }`}
+              >
+                {autoRefresh ? 'Auto: ON (60s)' : 'Auto: OFF'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyDailySummary()}
+                className="h-[64px] rounded-2xl font-semibold text-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+              >
+                {copied ? 'Copiado ✓' : 'Copiar resumen'}
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -518,25 +617,124 @@ const Stat: React.FC<{ label: string; value: number }> = ({ label, value }) => (
   </div>
 );
 
-const StatusLine: React.FC<{ bridge: Summary['bridge'] }> = ({ bridge }) => {
-  if (!bridge) {
-    return (
-      <p className="text-amber-300 bg-amber-500/10 rounded-xl px-4 py-3">
-        No se pudo consultar el estado del asistente: puede haber contactos sin
-        registrar.
-      </p>
-    );
-  }
-  if (!bridge.connected) {
-    return (
-      <p className="text-red-300 bg-red-500/10 rounded-xl px-4 py-3">
-        El asistente está desconectado: los mensajes no se están recibiendo.
-      </p>
-    );
-  }
+const StatusGrid: React.FC<{
+  bridge: Summary['bridge'];
+  supervisionReachable: boolean;
+  legacy: LegacySummary | null;
+}> = ({ bridge, supervisionReachable, legacy }) => {
+  const assistantOk = bridge?.connected === true && bridge?.authenticated === true;
+  const assistantWarn = bridge?.connected === true && !bridge?.authenticated;
+
   return (
-    <p className="text-green-300 bg-green-500/10 rounded-xl px-4 py-3">
-      Asistente conectado y recibiendo mensajes.
-    </p>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div
+        className={`rounded-xl px-4 py-3 ${
+          !bridge
+            ? 'bg-amber-500/10 text-amber-300'
+            : assistantOk
+              ? 'bg-green-500/10 text-green-300'
+              : assistantWarn
+                ? 'bg-amber-500/10 text-amber-300'
+                : 'bg-red-500/10 text-red-300'
+        }`}
+      >
+        <div className="text-xs uppercase tracking-wider opacity-80">Asistente</div>
+        <div className="font-semibold mt-0.5">
+          {!bridge
+            ? 'Sin respuesta'
+            : assistantOk
+              ? 'Conectado'
+              : assistantWarn
+                ? 'Sin autenticar'
+                : 'Desconectado'}
+        </div>
+      </div>
+
+      <div
+        className={`rounded-xl px-4 py-3 ${
+          supervisionReachable
+            ? 'bg-green-500/10 text-green-300'
+            : 'bg-amber-500/10 text-amber-300'
+        }`}
+      >
+        <div className="text-xs uppercase tracking-wider opacity-80">Supervisión</div>
+        <div className="font-semibold mt-0.5">
+          {supervisionReachable ? 'Lazo activo' : 'No alcanzable'}
+        </div>
+      </div>
+
+      <div
+        className={`rounded-xl px-4 py-3 ${
+          !legacy
+            ? 'bg-amber-500/10 text-amber-300'
+            : legacy.isWorkday
+              ? 'bg-green-500/10 text-green-300'
+              : 'bg-white/10 text-gray-300'
+        }`}
+      >
+        <div className="text-xs uppercase tracking-wider opacity-80">Línea Legacy</div>
+        <div className="font-semibold mt-0.5">
+          {!legacy
+            ? 'Sin registro'
+            : legacy.isWorkday
+              ? `Activa (${legacy.workHours.start}–${legacy.workHours.end})`
+              : 'Standby (fuera de día hábil)'}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FunnelAndCountry: React.FC<{
+  toHuman: number;
+  toAssistant: number;
+  leadsCreated: number;
+  byCountry: Record<string, number>;
+}> = ({ toHuman, toAssistant, leadsCreated, byCountry }) => {
+  const leadRate = toHuman > 0 ? Math.round((leadsCreated / toHuman) * 100) : null;
+  const countries = Object.keys(byCountry)
+    .map((c): [string, number] => [c, byCountry[c]])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  return (
+    <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="bg-white/5 rounded-2xl p-4">
+        <h2 className="text-lg font-semibold mb-2">Embudo de derivación</h2>
+        <div className="space-y-1.5 text-sm text-gray-200">
+          <div className="flex justify-between">
+            <span>A línea humana</span>
+            <span className="font-semibold">{toHuman}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Leads registrados</span>
+            <span className="font-semibold">
+              {leadsCreated}
+              {leadRate !== null ? ` (${leadRate}%)` : ''}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Al asistente</span>
+            <span className="font-semibold">{toAssistant}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/5 rounded-2xl p-4">
+        <h2 className="text-lg font-semibold mb-2">Origen por país</h2>
+        {countries.length === 0 ? (
+          <p className="text-sm text-gray-400">Sin datos de origen hoy.</p>
+        ) : (
+          <div className="space-y-1.5 text-sm text-gray-200">
+            {countries.map(([country, count]) => (
+              <div key={country} className="flex justify-between">
+                <span>{country}</span>
+                <span className="font-semibold">{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 };

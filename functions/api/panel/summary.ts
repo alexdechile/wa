@@ -6,6 +6,7 @@ import {
   fetchOpenLeads,
   type BridgeLead,
 } from '../../_lib/bridge';
+import { getTimeInfo } from '../../_lib/schedule';
 
 interface ContactEventRow {
   id: number;
@@ -88,18 +89,25 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   });
 
   const byButton: Record<string, number> = {};
+  const byCountry: Record<string, number> = {};
   let lunch = 0;
   let outOfHours = 0;
   let toHuman = 0;
   let toAssistant = 0;
+  let leadsCreated = 0;
 
   for (const row of todayEvents) {
     byButton[row.button] = (byButton[row.button] ?? 0) + 1;
+    const country = row.country?.trim() || 'Desconocido';
+    byCountry[country] = (byCountry[country] ?? 0) + 1;
     if (row.is_lunch_break) lunch += 1;
     if (row.is_human_hours === 0) outOfHours += 1;
     if (row.target_line === 'human') toHuman += 1;
     if (row.target_line === 'assistant') toAssistant += 1;
+    if (row.lead_id) leadsCreated += 1;
   }
+
+  const routingNow = getTimeInfo();
 
   const bridge = await fetchBridgeHealth(env);
   const openLeads = await fetchOpenLeads(env);
@@ -128,10 +136,13 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     // total. El panel lo muestra en vez de reportar menos como si fuera todo.
     truncated: (results ?? []).length >= SUMMARY_ROW_LIMIT,
     byButton,
+    byCountry,
     lunch,
     outOfHours,
     toHuman,
     toAssistant,
+    leadsCreated,
+    routingNow,
     // Un cero debe poder distinguirse de una falla: `bridge: null` significa
     // "no se pudo consultar", no "el canal está sano".
     bridge,
