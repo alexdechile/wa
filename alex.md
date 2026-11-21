@@ -1,6 +1,12 @@
 # Bitácora y Documentación Maestra (wa.comerza.cl)
 
 ## Último Realizado
+- **Clasificador de Clientes vs No-Clientes con Cloudflare Workers AI y Feedback por WhatsApp (2026-11-21)**:
+  - **Endpoint `/api/classify` (`wa`):** Binding `[ai]` (`AI`) configurado en `wrangler.toml` y `functions/api/classify.ts` usando `@cf/meta/llama-3.1-8b-instruct` (autenticado con `BRIDGE_TOKEN`). Ante la duda o fallo, responde `isCustomer: true`.
+  - **Libreta persistente y comandos en `bim`:** Tabla `contact_classifications` en `ventas-supervision.db`, módulo `lib/channels/customer-classifier.ts` (reglas deterministas de `wa.comerza.cl` / OTP + fallback a `/api/classify`), y lectura de comandos de Iván/Alex por WhatsApp (`no cliente #N`, `proveedor #N`, `cliente #N`) en `scripts/supervision-ventas.ts`.
+- **Serialización de Tickets y Alerta de Respondido en Canal Ventas (2026-11-09)**:
+  - **Serialización correlativa:** En `proyectos/bim` se integró la columna `ticket_number` secuencial en la base de tickets de ventas (`ventas-supervision.db`) con backfill automático (178 tickets históricos correlativos).
+  - **Alerta de resolución:** `comerza-supervision-ventas.service` ahora envía una alerta de WhatsApp ("✅ [Ventas Comerza · Ticket #N Respondido]") a Iván y Alex apenas el encargado contesta una conversación que había detonado alerta SLA, cerrando el ciclo y evitando consultas innecesarias al encargado.
 - **Integración de Línea Legacy en Panel Admin (2026-11-04)**:
   - **Tercera línea wacli (`legacy`):** Dispositivo vinculado para la línea fija histórica (+56 2 2683 5288).
   - **Sincronización laboral continua (08:30 a 19:00, Lun-Vie):** Servicio `wacli-sync-legacy.service` orquestado por `wacli-sync-legacy-start.timer` (08:30) y `wacli-sync-legacy-stop.timer` (19:00). Standby completo fuera de horario.

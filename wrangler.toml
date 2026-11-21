@@ -21,3 +21,7 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "comerza-wa"
 database_id = "19972fa5-b040-442e-9213-c6dbbac53aef"
+
+# Workers AI para clasificar si un mensaje entrante es de un cliente o no.
+[ai]
+binding = "AI"

@@ -26,12 +26,18 @@ interface D1Database {
   batch(statements: D1PreparedStatement[]): Promise<D1Result[]>;
 }
 
+interface Ai {
+  run<T = unknown>(model: string, input: Record<string, unknown>): Promise<T>;
+}
+
 interface Env {
   /**
    * Base D1 para la telemetría del enrutador. Es opcional a propósito: sin el
    * binding la app sigue funcionando y la telemetría solo queda en logs.
    */
   DB?: D1Database;
+  /** Binding de Cloudflare Workers AI para clasificación de mensajes. */
+  AI?: Ai;
   /** URL del puente de wacli en el host (ver repositorio bim). */
   BRIDGE_URL?: string;
   /** Secreto compartido con el puente de wacli. Da acceso al WhatsApp del negocio. */
