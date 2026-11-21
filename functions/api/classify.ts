@@ -13,7 +13,7 @@ import { readJsonBody, TOO_LARGE_MESSAGE } from '../_lib/body';
  * una venta real.
  */
 
-const MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast';
 const MAX_CLASSIFY_BYTES = 4096;
 
 type Category = 'customer' | 'supplier' | 'personal' | 'spam' | 'unknown';
@@ -163,7 +163,7 @@ export const onRequestPost: PagesFunction = async (context) => {
     .join('\n\n');
 
   try {
-    const aiResp = await env.AI.run<{ response?: string }>(MODEL, {
+    const aiResp = await env.AI.run<{ response?: unknown }>(MODEL, {
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -172,8 +172,13 @@ export const onRequestPost: PagesFunction = async (context) => {
       max_tokens: 180,
     });
 
-    const raw = typeof aiResp?.response === 'string' ? aiResp.response : '';
-    const parsed = parseModelJson(raw);
+    // Workers AI entrega `response` como string o ya parseado como objeto cuando es JSON válido.
+    let parsed: ClassifyResult | null = null;
+    if (aiResp?.response && typeof aiResp.response === 'object') {
+      parsed = parseModelJson(JSON.stringify(aiResp.response));
+    } else if (typeof aiResp?.response === 'string') {
+      parsed = parseModelJson(aiResp.response);
+    }
 
     if (!parsed) {
       return json({
